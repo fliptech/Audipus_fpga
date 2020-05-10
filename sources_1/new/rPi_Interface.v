@@ -30,8 +30,6 @@ module rPi_Interface # (
     input       spi_clk,        
     input       spi_mosi,
     output tri  spi_miso,
-    output      spi_cs_pcm1792,
-    output      spi_cs_pcm9211,
     output reg  reg_read_stb,
     output reg  reg_write_stb,
     output reg  [num_of_addr_bits-1:0]  spi_addr,

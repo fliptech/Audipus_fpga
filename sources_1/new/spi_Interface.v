@@ -20,19 +20,25 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module spi_Interface (
+module spi_Interface # (
+    parameter taps_per_filter = 4
+) (
     input clk,
     input reset_n,
     input       spi_cs0,
-    input       spi_cs1,
     input       spi_clk,        
     input       spi_mosi,
     output reg  spi_miso,
-    output      spi_cs_pcm1792,
-    output      spi_cs_pcm9211,
 //  registers
-    output reg [15:0] control_reg
+    output reg [15:0] control_reg,
+    output reg [15:0] eq_tap_sel_reg,                       // eq bits 15:10, tap bits 9:0
+    output reg [15:0] fir_coef_eq01[taps_per_filter-1:0]
 );
+
+//	GENERAL REGISTERS	
+//	Write / Read
+	parameter CONTROL          = 16'h0000;		// Control Reg
+	parameter EQ_TAP_SEL       = 16'h0001;		// Equalizer & Tap select Reg
 
 
 rPi_Interface rpi (
@@ -42,21 +48,15 @@ rPi_Interface rpi (
     .spi_clk        (spi_clk),        
     .spi_mosi       (spi_mosi),
     .spi_miso       (spi_miso),
-    .reg_read_en    (rd_strobe),
-    .reg_write_en   (wr_strobe),
+    .reg_read_stb   (rd_strobe),
+    .reg_write_stb  (wr_strobe),
     .spi_addr       (spi_addr),
     .spi_write_data (spi_write_data),
     .spi_read_data  (spi_read_data) 
 );
 
 
-assign spi_cs_pcm1792 = control_reg[0] ? spi_cs1 : 1'b0;
-assign spi_cs_pcm9211 = control_reg[0] ? 1'b0 : spi_cs1 ;
 
-
-//	GENERAL REGISTERS	
-//	Write / Read
-	parameter CONTROL      = 16'h0000;		// Control Reg
 
 
 wire    spi_write_data, spi_read_data;
@@ -67,14 +67,16 @@ always @ (posedge clk) begin
 
 	if (wr_strobe) begin
 //		if (selGeneral) begin
-			if (spi_addr == CONTROL)		control_reg		<= spi_write_data;
+			if (spi_addr == CONTROL)                 control_reg         <= spi_write_data;
+			else if (spi_addr == EQ_TAP_SEL)         eq_tap_sel_reg      <= spi_write_data;
 
     end
 end
 
 // Register Read
 assign spi_read_data = 
-            (rd_strobe && (spi_addr == CONTROL))    ?   control_reg :
+            (rd_strobe && (spi_addr == CONTROL))        ?   control_reg :
+            (rd_strobe && (spi_addr == EQ_TAP_SEL))     ?   eq_tap_sel_reg :
             16'hdead;
         
 endmodule

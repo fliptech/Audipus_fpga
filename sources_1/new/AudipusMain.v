@@ -24,10 +24,10 @@ parameter num_of_equalizers = 8;
 
     module AudipusMain (
         input reset_n,
-        output spi_cs_pcm9211,
-        output spi_cs_pcm1792,
-        input spi_cs0,
-        input spi_cs1,
+        output spi_cs_pcm9211_n,
+        output spi_cs_pcm1792_n,
+        input spi_cs0_n,
+        input spi_cs1_n,
         input spi_clk,
         input spi_mosi,
         output spi_miso,
@@ -70,6 +70,16 @@ parameter num_of_equalizers = 8;
         output [3:0] led
     );
     
+    wire spi_cs0 = !spi_cs0_n;
+    
+    wire spi_cs_pcm1792 = control_reg[0] ? spi_cs1_n : 1'b1;
+    wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
+    
+// System Registers
+    wire [15:0] control_reg;
+
+
+    
     ClockGeneration system_clks (
         .main_clk   (main_clk),
         .reset_n    (reset_n),
@@ -85,15 +95,15 @@ parameter num_of_equalizers = 8;
         .clk            (clk),
         .reset_n        (reset_n),
         .spi_cs0        (spi_cs0),
-        .spi_cs1        (spi_cs1),
         .spi_clk        (spi_clk),        
         .spi_mosi       (spi_mosi),
         .spi_miso       (spi_miso),
         .spi_cs_pcm1792 (spi_cs_pcm1792),
         .spi_cs_pcm9211 (spi_cs_pcm9211),
 //  registers
-        .control_reg    (regs_out)          // out [15:0]
-        
+        .control_reg    (control_reg),          // out [15:0]
+        .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
+        .fir_coef_eq01  (fir_coef_eq01)
     );
     
     AudioProcessing (
@@ -114,7 +124,9 @@ parameter num_of_equalizers = 8;
         
         .sram_spi_cs    (spi_cs),
         .sram_spi_clk   (spi_clk),
-        .sram_spi_sio   (spi_sio)       // inout [3:0]
+        .sram_spi_sio   (spi_sio),       // inout [3:0]
+        
+        .fir_coef_eq01  (fir_coef_eq01)
     );
 
 
