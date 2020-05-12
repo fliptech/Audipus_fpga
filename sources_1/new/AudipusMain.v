@@ -109,6 +109,7 @@ parameter num_of_equalizers = 8;
     AudioProcessing (
         .clk            (clk),
         .reset_n        (reset_n),
+        .bypass         (control_reg[1]),
         .i2s_sclk       (pcm9211_i2s_sclk),
         .i2s_bclk       (pcm9211_i2s_bclk),
         .i2s_lrclk      (pcm9211_i2s_lrclk),
