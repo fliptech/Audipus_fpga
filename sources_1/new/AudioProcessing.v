@@ -79,7 +79,27 @@ I2S_to_PWM_converter (
     .r_data     (r_pwm_chnl)
 );    
     
-    
+FIR_Tap fir_tap_l (
+    .clk                (clk),
+    .reset_n            (reset_n),
+    .data_en            (pwm_d_en),
+    .audio_data_in      (l_pwm_chnl),    
+    .coefficients       (coefficients),
+    .data_valid         (l_data_valid),
+    .coef_addr          (coef_addr),    
+    .audio_data_out     (l_aud_out)    
+);        
+
+FIR_Tap fir_tap_r(
+    .clk                (clk),
+    .reset_n            (reset_n),
+    .data_en            (pwm_d_en),
+    .audio_data_in      (r_pwm_chnl),    
+    .coefficients       (coefficients),
+    .data_valid         (r_data_valid),
+    .coef_addr          (coef_addr),    
+    .audio_data_out     (r_aud_out)    
+);        
 
 endmodule
 
