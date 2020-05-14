@@ -68,37 +68,55 @@ end
 
 
 I2S_to_PWM_converter (
-    .clk        (clk),
-    .reset_n    (reset_n),
-    .sclk       (i2s_sclk),
-    .bclk       (i2s_bclk),
-    .lrclk      (i2s_lrclk),
-    .s_data     (i2s_d),
-    .data_en    (pwm_d_en),
-    .l_data     (l_pwm_chnl),
-    .r_data     (r_pwm_chnl)
+    .clk        (clk),          // input
+    .reset_n    (reset_n),      // input
+    .sclk       (i2s_sclk),     // input
+    .bclk       (i2s_bclk),     // input
+    .lrclk      (i2s_lrclk),    // input
+    .s_data     (i2s_d),        // input
+    .data_en    (l_pwm_d_en),   // output     
+    .data_en    (r_pwm_d_en),   // output     
+    .l_data     (l_pwm_chnl),   // [23:0] output
+    .r_data     (r_pwm_chnl)    // [23:0] output
 );    
     
+PWM_to_I2S_converter (
+    .clk        (clk),          // input
+    .reset_n    (reset_n),      // input
+    .data_en    (pwm_d_en),     // input
+    .l_data     (l_aud_out[47:24]),    // [23:0] input
+    .r_data     (r_aud_out[47:24]),    // [23:0] input
+    .sclk       (i2s_sclk),     // output
+    .bclk       (i2s_bclk),     // output
+    .lrclk      (i2s_lrclk),    // output
+    .s_data     (i2s_d)         // output
+);    
+ 
+wire        l_pwm_d_en, r_pwm_d_en;
+wire        l_data_valid, r_data_valid;
+wire [23:0] l_pwm_chnl, r_pwm_chnl;
+wire [47:0] l_aud_out, r_aud_out;
+    
 FIR_Tap fir_tap_l (
-    .clk                (clk),
-    .reset_n            (reset_n),
-    .data_en            (pwm_d_en),
-    .audio_data_in      (l_pwm_chnl),    
-    .coefficients       (coefficients),
-    .data_valid         (l_data_valid),
-    .coef_addr          (coef_addr),    
-    .audio_data_out     (l_aud_out)    
+    .clk                (clk),              // input              
+    .reset_n            (reset_n),          // input
+    .data_en            (l_pwm_d_en),       // input
+    .audio_data_in      (l_pwm_chnl),       // [23:0] input    
+    .coefficients       (coefficients),     // [15:0] input
+    .data_valid         (l_data_valid),     // output
+    .coef_addr          (coef_addr),        // [num_of_taps-1:0] output    
+    .audio_data_out     (l_aud_out)         // [47:0] output      
 );        
 
 FIR_Tap fir_tap_r(
-    .clk                (clk),
-    .reset_n            (reset_n),
-    .data_en            (pwm_d_en),
-    .audio_data_in      (r_pwm_chnl),    
-    .coefficients       (coefficients),
-    .data_valid         (r_data_valid),
-    .coef_addr          (coef_addr),    
-    .audio_data_out     (r_aud_out)    
+    .clk                (clk),              // input
+    .reset_n            (reset_n),          // input
+    .data_en            (r_pwm_d_en),       // input
+    .audio_data_in      (r_pwm_chnl),       // [23:0] input    
+    .coefficients       (coefficients),     // [15:0] input
+    .data_valid         (r_data_valid),     // output
+    .coef_addr          (coef_addr),        // [num_of_taps-1:0] output
+    .audio_data_out     (r_aud_out)         // [47:0] output   
 );        
 
 endmodule
