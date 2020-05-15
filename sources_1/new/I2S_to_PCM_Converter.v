@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module I2S_to_PWM_Converter(
+module I2S_to_PCM_Converter(
     input clk,
     input reset_n,
     input sclk,

@@ -67,7 +67,7 @@ always @ (posedge clk) begin
 end
 
 
-I2S_to_PWM_converter (
+I2S_to_PCM_Converter (
     .clk        (clk),          // input
     .reset_n    (reset_n),      // input
     .sclk       (i2s_sclk),     // input
@@ -80,7 +80,7 @@ I2S_to_PWM_converter (
     .r_data     (r_pwm_chnl)    // [23:0] output
 );    
     
-PWM_to_I2S_converter (
+PCM_to_I2S_Converter (
     .clk        (clk),          // input
     .reset_n    (reset_n),      // input
     .data_en    (pwm_d_en),     // input
