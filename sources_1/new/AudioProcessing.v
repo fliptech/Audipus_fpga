@@ -74,16 +74,16 @@ I2S_to_PCM_Converter (
     .bclk       (i2s_bclk),     // input
     .lrclk      (i2s_lrclk),    // input
     .s_data     (i2s_d),        // input
-    .data_en    (l_pwm_d_en),   // output     
-    .data_en    (r_pwm_d_en),   // output     
-    .l_data     (l_pwm_chnl),   // [23:0] output
-    .r_data     (r_pwm_chnl)    // [23:0] output
+    .data_en    (l_pcm_d_en),   // output     
+    .data_en    (r_pcm_d_en),   // output     
+    .l_data     (l_pcm_chnl),   // [23:0] output
+    .r_data     (r_pcm_chnl)    // [23:0] output
 );    
     
 PCM_to_I2S_Converter (
     .clk        (clk),          // input
     .reset_n    (reset_n),      // input
-    .data_en    (pwm_d_en),     // input
+    .data_en    (pcm_d_en),     // input
     .l_data     (l_aud_out[47:24]),    // [23:0] input
     .r_data     (r_aud_out[47:24]),    // [23:0] input
     .sclk       (i2s_sclk),     // output
@@ -92,16 +92,16 @@ PCM_to_I2S_Converter (
     .s_data     (i2s_d)         // output
 );    
  
-wire        l_pwm_d_en, r_pwm_d_en;
+wire        l_pcm_d_en, r_pcm_d_en;
 wire        l_data_valid, r_data_valid;
-wire [23:0] l_pwm_chnl, r_pwm_chnl;
+wire [23:0] l_pcm_chnl, r_pcm_chnl;
 wire [47:0] l_aud_out, r_aud_out;
     
 FIR_Tap fir_tap_l (
     .clk                (clk),              // input              
     .reset_n            (reset_n),          // input
-    .data_en            (l_pwm_d_en),       // input
-    .audio_data_in      (l_pwm_chnl),       // [23:0] input    
+    .data_en            (l_pcm_d_en),       // input
+    .audio_data_in      (l_pcm_chnl),       // [23:0] input    
     .coefficients       (coefficients),     // [15:0] input
     .data_valid         (l_data_valid),     // output
     .coef_addr          (coef_addr),        // [num_of_taps-1:0] output    
@@ -111,8 +111,8 @@ FIR_Tap fir_tap_l (
 FIR_Tap fir_tap_r(
     .clk                (clk),              // input
     .reset_n            (reset_n),          // input
-    .data_en            (r_pwm_d_en),       // input
-    .audio_data_in      (r_pwm_chnl),       // [23:0] input    
+    .data_en            (r_pcm_d_en),       // input
+    .audio_data_in      (r_pcm_chnl),       // [23:0] input    
     .coefficients       (coefficients),     // [15:0] input
     .data_valid         (r_data_valid),     // output
     .coef_addr          (coef_addr),        // [num_of_taps-1:0] output
