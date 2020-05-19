@@ -74,8 +74,8 @@ I2S_to_PCM_Converter (
     .bclk       (i2s_bclk),     // input
     .lrclk      (i2s_lrclk),    // input
     .s_data     (i2s_d),        // input
-    .data_en    (l_pcm_d_en),   // output     
-    .data_en    (r_pcm_d_en),   // output     
+    .l_data_stb (l_pcm_d_en),   // output     
+    .r_data_stb (r_pcm_d_en),   // output     
     .l_data     (l_pcm_chnl),   // [23:0] output
     .r_data     (r_pcm_chnl)    // [23:0] output
 );    
