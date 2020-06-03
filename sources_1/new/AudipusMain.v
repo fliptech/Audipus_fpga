@@ -67,16 +67,23 @@ parameter num_of_equalizers = 8;
         output [17:0] test,
         inout [9:0] aux,
         output [3:0] step_drv,
-        output [3:0] led
+        output [3:0] led,
+        output      spdif_out
     );
     
+// System Registers
+    wire [15:0] control_reg;
+    wire [15:0] mpio_rd_reg, mpio_rd_reg;
+
     wire spi_cs0 = !spi_cs0_n;
+    
+    wire [1:0] mpio_control = control_reg[3:2];
+    wire [1:0] sram_control = control_reg[5:4];
     
     wire spi_cs_pcm1792 = control_reg[0] ? spi_cs1_n : 1'b1;
     wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
     
-// System Registers
-    wire [15:0] control_reg;
+
 
 
     
@@ -103,8 +110,22 @@ parameter num_of_equalizers = 8;
 //  registers
         .control_reg    (control_reg),          // out [15:0]
         .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
+        .mpio_rd_reg    (mpio_rd_reg),
+        .mpio_wr_reg    (mpio_wr_reg),
         .fir_coef_eq01  (fir_coef_eq01)
     );
+    
+    sram_Interface sQi_interface (        
+        .clk            (clk),
+        .reset_n        (reset_n),
+        .control        (sram_control),         // input [1:0]
+        .sQi_cs0        (sram_spi_cs0),
+        .sQi_clk        (sram_spi_clk), 
+        .sQi_sio        (sram_spi_sio),          // inout [3:0] 
+        .sram_rd_reg    (sram_rd_reg),          // output [15:0]
+        .sram_wr_reg    (sram_wr_reg)           // input [15:0]
+    );
+    
     
     AudioProcessing (
         .clk            (clk),
@@ -130,5 +151,14 @@ parameter num_of_equalizers = 8;
         .fir_coef_eq01  (fir_coef_eq01)
     );
 
-
+    PCM9211_mpio_Interface (
+        .mpio_control   (mpio_control),     // input[1:0]
+        .mpioa          (pcm9211_mpioA),
+        .mpiob          (pcm9211_mpioB),
+        .mpioc          (pcm9211_mpioC),
+        .mpio_rd_reg    (mpio_rd_reg),      // output [15:0]
+        .mpio_wr_reg    (mpio_wr_reg)       // input [15:0]
+    );
+        
+    
 endmodule
