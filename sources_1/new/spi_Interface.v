@@ -36,6 +36,10 @@ module spi_Interface # (
     output reg [15:0]   mpio_wr_reg,                       // eq bits 15:10, tap bits 9:0
     input [15:0]        sram_rd_reg,                       // eq bits 15:10, tap bits 9:0
     output reg [15:0]   sram_wr_reg,                       // eq bits 15:10, tap bits 9:0
+    input [15:0]        status,
+    output reg [15:0]   motor_interval,
+    output reg [15:0]   aux_port,
+    output reg [15:0]   test_port,
     output reg [15:0]   fir_coef_eq01[taps_per_filter-1:0]
 );
 
@@ -45,6 +49,10 @@ module spi_Interface # (
 	parameter EQ_TAP_SEL       = 16'h0001;		// Equalizer & Tap select Reg
 	parameter MPIO_SEL         = 16'h0002;		// Equalizer & Tap select Reg
 	parameter SRAM_SEL         = 16'h0003;		// Equalizer & Tap select Reg
+	parameter STATUS           = 16'h0004;		// Equalizer & Tap select Reg
+	parameter MOTOR            = 16'h0005;		// Equalizer & Tap select Reg
+	parameter AUX              = 16'h0006;		// Equalizer & Tap select Reg
+	parameter TEST             = 16'h0007;		// Equalizer & Tap select Reg
 	
 
 
@@ -77,7 +85,10 @@ always @ (posedge clk) begin
 			if (spi_addr == CONTROL)                 control_reg         <= spi_write_data;
 			else if (spi_addr == EQ_TAP_SEL)         eq_tap_sel_reg      <= spi_write_data;
 			else if (spi_addr == MPIO_SEL)           mpio_wr_reg         <= spi_write_data;
-			else if (spi_addr == MPIO_SEL)           sram_wr_reg         <= spi_write_data;
+			else if (spi_addr == SRAM_SEL)           sram_wr_reg         <= spi_write_data;
+			else if (spi_addr == MOTOR)              motor_interval      <= spi_write_data;
+			else if (spi_addr == AUX)                aux_port            <= spi_write_data;
+			else if (spi_addr == TEST)               test_port           <= spi_write_data;
 
     end
 end
@@ -88,6 +99,9 @@ assign spi_read_data =
             (rd_strobe && (spi_addr == EQ_TAP_SEL))     ?   eq_tap_sel_reg :
             (rd_strobe && (spi_addr == MPIO_SEL))       ?   mpio_rd_reg :
             (rd_strobe && (spi_addr == SRAM_SEL))       ?   sram_rd_reg :
+            (rd_strobe && (spi_addr == STATUS))         ?   status :
+            (rd_strobe && (spi_addr == MOTOR))          ?   motor_interval :
+            
             16'hdead;
         
 endmodule

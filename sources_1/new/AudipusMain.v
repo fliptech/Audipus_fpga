@@ -61,14 +61,14 @@ parameter num_of_equalizers = 8;
         inout   rPi16,
         inout   rPi17,
         inout   rPi20,
-        inout   [22:27] rPi4,
+        inout   [27:22] rPi27_22,
         
         
-        output [17:0] test,
-        inout [9:0] aux,
-        output [3:0] step_drv,
-        output [3:0] led,
-        output      spdif_out
+        output [17:0]   test,
+        inout [9:0]     aux,
+        output [3:0]    step_drv,
+        output [3:0]    led,
+        output          spdif_out
     );
     
 // System Registers
@@ -82,7 +82,9 @@ parameter num_of_equalizers = 8;
     
     wire spi_cs_pcm1792 = control_reg[0] ? spi_cs1_n : 1'b1;
     wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
-    
+    wire [15:0] status = 
+        {2'b00, rPi27_22, rPi20, rPi17, rPi16, rPi4, 
+         pcm9211_int1, pcm9211_int0, pcm9211_mpo0, pcm9211_mpo0}; 
 
 
 
@@ -90,7 +92,9 @@ parameter num_of_equalizers = 8;
     ClockGeneration system_clks (
         .main_clk   (main_clk),
         .reset_n    (reset_n),
-        .sys_clk    (clk)
+        .sys_clk    (clk),
+        .i2s_clk    (pcm9211_i2s_clk_out),
+        .locked     (sys_clk_locked)
     );
     
     Indicators led_lights (
@@ -112,6 +116,10 @@ parameter num_of_equalizers = 8;
         .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
         .mpio_rd_reg    (mpio_rd_reg),
         .mpio_wr_reg    (mpio_wr_reg),
+        .status         (status),                // input [9:0]
+        .motor_interval (motor_interval),
+        .aux_port       (aux),
+        .test_port      (test),
         .fir_coef_eq01  (fir_coef_eq01)
     );
     
@@ -119,7 +127,7 @@ parameter num_of_equalizers = 8;
         .clk            (clk),
         .reset_n        (reset_n),
         .control        (sram_control),         // input [1:0]
-        .sQi_cs0        (sram_spi_cs0),
+        .sQi_cs0        (sram_spi_cs),
         .sQi_clk        (sram_spi_clk), 
         .sQi_sio        (sram_spi_sio),          // inout [3:0] 
         .sram_rd_reg    (sram_rd_reg),          // output [15:0]
@@ -160,5 +168,11 @@ parameter num_of_equalizers = 8;
         .mpio_wr_reg    (mpio_wr_reg)       // input [15:0]
     );
         
+    StepperMotorDrive step_drive (
+        .clk            (clk),
+        .motor_interval (motor_interval),   // input [15:0]
+        .step_drv       (step_drv)          // output [3:0]
+        
+    );
     
 endmodule
