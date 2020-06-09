@@ -61,7 +61,7 @@ parameter num_of_equalizers = 8;
         inout   rPi16,
         inout   rPi17,
         inout   rPi20,
-        inout   [27:22] rPi27_22,
+        inout   [27:22] rPix,
         
         
         output [17:0]   test,
@@ -83,7 +83,7 @@ parameter num_of_equalizers = 8;
     wire spi_cs_pcm1792 = control_reg[0] ? spi_cs1_n : 1'b1;
     wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
     wire [15:0] status = 
-        {2'b00, rPi27_22, rPi20, rPi17, rPi16, rPi4, 
+        {2'b00, rPix, rPi20, rPi17, rPi16, rPi4, 
          pcm9211_int1, pcm9211_int0, pcm9211_mpo0, pcm9211_mpo0}; 
 
 
