@@ -39,6 +39,8 @@ reg [31:0]      val;
 //reg             data_en_dly, process_en;
 reg [7:0]       process_cnt;            // change if more than 256 taps
 
+wire            fir_bypass = 0;
+
 integer i;
 
 // data shift register

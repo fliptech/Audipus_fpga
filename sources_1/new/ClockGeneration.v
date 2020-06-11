@@ -28,19 +28,20 @@ module ClockGeneration(
     output  locked
 );
 
+/*
 wire pll_clk;
 
 BUFG BUFG_inst(
     .I  (main_clk),
     .O  (pll_clk)
 );
-
+*/
 main_clk_gen instance_name (
     // Status and control signals
     .resetn         (reset_n), // input resetn
     .locked         (pll_locked),       // output locked
    // Clock in ports
-    .clk_in1        (pll_clk),      // input clk_in1
+    .clk_in1        (main_clk),      // input clk_in1
     // Clock out ports
     .clk_out1       (sys_clk),     // output clk_out1
     .clk_out2       (i2s_sclk)     // output clk_out2

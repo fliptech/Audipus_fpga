@@ -21,7 +21,7 @@
 
 
 module AudioProcessing #(
-    parameter num_of_taps = 64,
+    parameter num_of_taps = 4,
     parameter num_of_equalizers = 8
 )(
     input clk,
@@ -40,7 +40,7 @@ module AudioProcessing #(
     output reg dac_data,
     output reg sram_spi_cs,
     output reg sram_spi_clk,
-    inout [3:0] sram_sio,
+    inout [3:0] sram_spi_sio,
     
     //registers
     input [15:0]    fir_coef_eq01[num_of_taps-1:0]
@@ -48,6 +48,12 @@ module AudioProcessing #(
 
 
 assign dac_rst = !reset_n;
+
+wire pcmToI2S_sclk;
+wire pcmToI2S_bclk;
+wire pcmToI2S_lrclk;
+wire pcmToI2S_data;
+
 
 always @ (posedge clk) begin
     if (bypass) begin
@@ -59,10 +65,10 @@ always @ (posedge clk) begin
     end
     else begin
     // add audio processed output here
-        dac_sclk <= 1'b0;
-        dac_bclk <= 1'b0;
-        dac_lrclk <= 1'b0;
-        dac_data <= 1'b0;
+        dac_sclk <= pcmToI2S_sclk;
+        dac_bclk <= pcmToI2S_bclk;
+        dac_lrclk <= pcmToI2S_lrclk;
+        dac_data <= pcmToI2S_data;
     end
 end
 
@@ -81,15 +87,16 @@ I2S_to_PCM_Converter (
 );    
     
 PCM_to_I2S_Converter (
-    .clk        (clk),          // input
-    .reset_n    (reset_n),      // input
-    .data_en    (pcm_d_en),     // input
-    .l_data     (l_aud_out[47:24]),    // [23:0] input
-    .r_data     (r_aud_out[47:24]),    // [23:0] input
-    .sclk       (i2s_sclk),     // output
-    .bclk       (i2s_bclk),     // output
-    .lrclk      (i2s_lrclk),    // output
-    .s_data     (i2s_d)         // output
+    .clk            (clk),          // input
+    .reset_n        (reset_n),      // input
+    .l_data_valid   (l_pcm_d_en),     // input
+    .r_data_valid   (r_pcm_d_en),     // input
+    .l_data         (l_aud_out[47:24]),    // [23:0] input
+    .r_data         (r_aud_out[47:24]),    // [23:0] input
+    .sclk           (pcmToI2S_sclk),     // output
+    .bclk           (pcmToI2S_bclk),     // output
+    .lrclk          (pcmToI2S_lrclk),    // output
+    .s_data         (pcmToI2S_data)         // output
 );    
  
 wire        l_pcm_d_en, r_pcm_d_en;
@@ -101,10 +108,10 @@ FIR_Tap fir_tap_l (
     .clk                (clk),              // input              
     .reset_n            (reset_n),          // input
     .data_en            (l_pcm_d_en),       // input
-    .audio_data_in      (l_pcm_chnl),       // [23:0] input    
+    .aud_data_in        (l_pcm_chnl),       // [23:0] input    
     .coefficients       (coefficients),     // [15:0] input
     .data_valid         (l_data_valid),     // output
-    .coef_addr          (coef_addr),        // [num_of_taps-1:0] output    
+    .coef_addr          (l_coef_addr),        // [num_of_taps-1:0] output    
     .audio_data_out     (l_aud_out)         // [47:0] output      
 );        
 
@@ -112,10 +119,10 @@ FIR_Tap fir_tap_r(
     .clk                (clk),              // input
     .reset_n            (reset_n),          // input
     .data_en            (r_pcm_d_en),       // input
-    .audio_data_in      (r_pcm_chnl),       // [23:0] input    
+    .aud_data_in        (r_pcm_chnl),       // [23:0] input    
     .coefficients       (coefficients),     // [15:0] input
     .data_valid         (r_data_valid),     // output
-    .coef_addr          (coef_addr),        // [num_of_taps-1:0] output
+    .coef_addr          (r_coef_addr),        // [num_of_taps-1:0] output
     .audio_data_out     (r_aud_out)         // [47:0] output   
 );        
 

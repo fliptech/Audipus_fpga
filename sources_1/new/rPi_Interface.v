@@ -128,7 +128,8 @@ always @ (posedge clk) begin
         end
         else if (spi_bit_count == num_of_addr_bits) begin
             reg_read_stb <= 1'b1;
-            spi_addr <= spi_shift_in_data[1:num_of_addr_bits]; //<<<<<<
+//            spi_addr <= spi_shift_in_data[1:num_of_addr_bits]; //<<<<<<
+            spi_addr <= spi_shift_in_data[num_of_addr_bits:1]; //<<<<<<
             spi_shift_in_data[num_of_data_bits-1:0] <=  spi_read_data;
             miso_tristate <= 1'b0;
         end

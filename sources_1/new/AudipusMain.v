@@ -38,8 +38,8 @@ parameter num_of_equalizers = 8;
         input pcm9211_i2s_bclk,
         input pcm9211_i2s_lrclk,
         input pcm9211_i2s_d,
-        input pcm9211_mpo0,
-        input pcm9211_mpo1,
+        input pcm9211_mpio0,
+        input pcm9211_mpio1,
         inout [3:0] pcm9211_mpioA,
         inout [3:0] pcm9211_mpioB,
         inout [3:0] pcm9211_mpioC,
@@ -71,7 +71,13 @@ parameter num_of_equalizers = 8;
         output          spdif_out
     );
     
+parameter taps_per_filter = 4;
+
 // System Registers
+    
+    assign pcm9211_clk = pcm9211_i2s_clk_out;       // << check
+    assign spdif_out = control_reg[7];              // temp
+
     wire [15:0] control_reg;
     wire [15:0] mpio_rd_reg, mpio_rd_reg;
 
@@ -84,16 +90,16 @@ parameter num_of_equalizers = 8;
     wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
     wire [15:0] status = 
         {2'b00, rPix, rPi20, rPi17, rPi16, rPi4, 
-         pcm9211_int1, pcm9211_int0, pcm9211_mpo0, pcm9211_mpo0}; 
+         pcm9211_int1, pcm9211_int0, pcm9211_mpio0, pcm9211_mpio1}; 
 
-
+    wire [15:0]   fir_coef_eq01[taps_per_filter-1:0];
 
     
     ClockGeneration system_clks (
         .main_clk   (main_clk),
         .reset_n    (reset_n),
         .sys_clk    (clk),
-        .i2s_clk    (pcm9211_i2s_clk_out),
+        .i2s_sclk    (pcm9211_i2s_clk_out),
         .locked     (sys_clk_locked)
     );
     
@@ -109,8 +115,6 @@ parameter num_of_equalizers = 8;
         .spi_clk        (spi_clk),        
         .spi_mosi       (spi_mosi),
         .spi_miso       (spi_miso),
-        .spi_cs_pcm1792 (spi_cs_pcm1792),
-        .spi_cs_pcm9211 (spi_cs_pcm9211),
 //  registers
         .control_reg    (control_reg),          // out [15:0]
         .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
@@ -168,11 +172,11 @@ parameter num_of_equalizers = 8;
         .mpio_wr_reg    (mpio_wr_reg)       // input [15:0]
     );
         
-    StepperMotorDrive step_drive (
+/*    StepperMotorDrive step_drive (
         .clk            (clk),
         .motor_interval (motor_interval),   // input [15:0]
         .step_drv       (step_drv)          // output [3:0]
         
     );
-    
+*/    
 endmodule

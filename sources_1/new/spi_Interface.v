@@ -28,7 +28,7 @@ module spi_Interface # (
     input       spi_cs0,
     input       spi_clk,        
     input       spi_mosi,
-    output reg  spi_miso,
+    output      spi_miso,
 //  registers
     output reg [15:0]   control_reg,
     output reg [15:0]   eq_tap_sel_reg,                       // eq bits 15:10, tap bits 9:0
@@ -61,8 +61,8 @@ rPi_Interface rpi (
     .reset_n        (reset_n),
     .spi_cs0        (spi_cs0),
     .spi_clk        (spi_clk),        
-    .spi_mosi       (spi_mosi),
-    .spi_miso       (spi_miso),
+    .spi_mosi       (spi_mosi),     // input
+    .spi_miso       (spi_miso),     // output tri
     .reg_read_stb   (rd_strobe),
     .reg_write_stb  (wr_strobe),
     .spi_addr       (spi_addr),
