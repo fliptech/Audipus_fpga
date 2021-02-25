@@ -88,7 +88,7 @@ always @ (posedge clk) begin
         spi_shift_in_data[num_of_shift_bits-1:1] <= spi_shift_in_data[num_of_shift_bits-2:0];
      end
     else begin
-        spi_shift_out_data <= spi_shift_out_data;
+        spi_shift_in_data <= spi_shift_in_data;
     end
 end
 

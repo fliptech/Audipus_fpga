@@ -53,10 +53,10 @@ set_property PACKAGE_PIN V16 [get_ports {sram_spi_sio[3]}]
 #
 set_property PACKAGE_PIN W19 [get_ports {security}]
 #
-set_property PACKAGE_PIN J2 [get_ports {led[0]}]
-set_property PACKAGE_PIN H2 [get_ports {led[1]}]
-set_property PACKAGE_PIN G2 [get_ports {led[2]}]
-set_property PACKAGE_PIN G3 [get_ports {led[3]}]
+set_property PACKAGE_PIN J2 [get_ports {led[3]}]
+set_property PACKAGE_PIN H2 [get_ports {led[2]}]
+set_property PACKAGE_PIN G2 [get_ports {led[1]}]
+set_property PACKAGE_PIN G3 [get_ports {led[0]}]
 #
 set_property PACKAGE_PIN P3 [get_ports {step_drv[0]}]
 set_property PACKAGE_PIN N3 [get_ports {step_drv[1]}]

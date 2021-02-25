@@ -57,11 +57,11 @@ parameter num_of_equalizers = 8;
         output sram_spi_clk,
         inout  [3:0] sram_spi_sio,
         
-        inout   rPi4,
-        inout   rPi16,
-        inout   rPi17,
-        inout   rPi20,
-        inout   [27:22] rPix,
+        input   rPi4,
+        input   rPi16,
+        input   rPi17,
+        input   rPi20,
+        input   [27:22] rPix,
         
         
         output [17:0]   test,
@@ -81,18 +81,21 @@ parameter taps_per_filter = 4;
     wire [15:0] control_reg;
     wire [15:0] mpio_rd_reg, mpio_rd_reg;
 
-    wire spi_cs0 = !spi_cs0_n;
+//  rPix[23:22] select the spi_cs_n for each device
+    assign spi_cs_fpga_n = spi_cs0_n || !(!rPix[23] && !rPix[22]);
+    assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
+    assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
     
     wire [1:0] mpio_control = control_reg[3:2];
     wire [1:0] sram_control = control_reg[5:4];
     
-    wire spi_cs_pcm1792 = control_reg[0] ? spi_cs1_n : 1'b1;
-    wire spi_cs_pcm9211 = control_reg[0] ? 1'b1 : spi_cs1_n ;
     wire [15:0] status = 
         {2'b00, rPix, rPi20, rPi17, rPi16, rPi4, 
          pcm9211_int1, pcm9211_int0, pcm9211_mpio0, pcm9211_mpio1}; 
 
     wire [15:0]   fir_coef_eq01[taps_per_filter-1:0];
+    
+    wire [15:0]   test_port;
 
     
     ClockGeneration system_clks (
@@ -111,7 +114,7 @@ parameter taps_per_filter = 4;
     spi_Interface sys_reg (        
         .clk            (clk),
         .reset_n        (reset_n),
-        .spi_cs0        (spi_cs0),
+        .spi_cs0        (!spi_cs_fpga_n),
         .spi_clk        (spi_clk),        
         .spi_mosi       (spi_mosi),
         .spi_miso       (spi_miso),
@@ -123,7 +126,7 @@ parameter taps_per_filter = 4;
         .status         (status),                // input [9:0]
         .motor_interval (motor_interval),
         .aux_port       (aux),
-        .test_port      (test),
+        .test_port      (test_port),
         .fir_coef_eq01  (fir_coef_eq01)
     );
     
@@ -178,5 +181,12 @@ parameter taps_per_filter = 4;
         .step_drv       (step_drv)          // output [3:0]
         
     );
-*/    
+*/  
+
+// Test Assignments
+    assign test[3:0] = {spi_clk, spi_cs0_n, spi_miso, spi_mosi};
+    assign test[11:4] = test_port[7:0];
+    assign test[17] = clk;
+      
+    
 endmodule
