@@ -1,9 +1,9 @@
 set_property PACKAGE_PIN N17 [get_ports {main_clk}]
-set_property PACKAGE_PIN D17 [get_ports {reset_n}]
+set_property PACKAGE_PIN P18 [get_ports {reset_n}]
 #
 set_property PACKAGE_PIN G18 [get_ports {spi_cs_pcm9211_n}]
 set_property PACKAGE_PIN F18 [get_ports {spi_cs_pcm1792_n}]
-set_property PACKAGE_PIN E18 [get_ports {spi_cs0_n}]
+set_property PACKAGE_PIN D17 [get_ports {spi_cs0_n}]
 set_property PACKAGE_PIN E19 [get_ports {spi_cs1_n}]
 set_property PACKAGE_PIN H19 [get_ports {spi_clk}]
 set_property PACKAGE_PIN G19 [get_ports {spi_mosi}]

@@ -28,7 +28,7 @@ module spi_Interface # (
     input       spi_cs0,
     input       spi_clk,        
     input       spi_mosi,
-    output      spi_miso,
+    output tri  spi_miso,
 //  registers
     output reg [15:0]   control_reg,
     output reg [15:0]   eq_tap_sel_reg,                       // eq bits 15:10, tap bits 9:0
@@ -101,6 +101,7 @@ assign spi_read_data =
             (rd_strobe && (spi_addr == SRAM_SEL))       ?   sram_rd_reg :
             (rd_strobe && (spi_addr == STATUS))         ?   status :
             (rd_strobe && (spi_addr == MOTOR))          ?   motor_interval :
+            (rd_strobe && (spi_addr == TEST))           ?   test_port :
             
             16'hdead;
         

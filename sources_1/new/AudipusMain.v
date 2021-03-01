@@ -30,7 +30,7 @@ parameter num_of_equalizers = 8;
         input spi_cs1_n,
         input spi_clk,
         input spi_mosi,
-        output spi_miso,
+        output tri spi_miso,
         output pcm9211_clk,
         input pcm9211_int0,
         input pcm9211_int1,
@@ -184,8 +184,9 @@ parameter taps_per_filter = 4;
 */  
 
 // Test Assignments
-    assign test[3:0] = {spi_clk, spi_cs0_n, spi_miso, spi_mosi};
+    assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
     assign test[11:4] = test_port[7:0];
+    assign test[13:12] = rPix[23:22];
     assign test[17] = clk;
       
     
