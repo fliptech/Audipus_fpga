@@ -21,12 +21,10 @@
 
 
 module AudioProcessing #(
-    parameter num_of_taps = 4,
-    parameter num_of_equalizers = 8
+    parameter num_of_filters = 8
 )(
     input clk,
     input reset_n,
-    input bypass,
     input i2s_sclk,
     input i2s_bclk,
     input i2s_lrclk,
@@ -41,13 +39,22 @@ module AudioProcessing #(
     output reg sram_spi_cs,
     output reg sram_spi_clk,
     inout [3:0] sram_spi_sio,
-    
-    //registers
-    input [15:0]    fir_coef_eq01[num_of_taps-1:0]
+    // cpu registers 
+    input       coef_wr_en,
+    input [7:0] audio_control,      // cpu reg 
+    input [7:0] taps_per_filter,    // cpu reg
+    input [7:0] coef_wr_lsb_data,   // cpu reg
+    input [7:0] coef_wr_msb_data    // cpu reg
 );
 
 
 assign dac_rst = !reset_n;
+/////// audio control register ////////
+assign bypass =         audio_control[0];
+assign audio_enable =   audio_control[1];
+assign coef_rst =       audio_control[2];
+
+/////////////////////////////////////////
 
 wire pcmToI2S_sclk;
 wire pcmToI2S_bclk;
@@ -103,28 +110,27 @@ wire        l_pcm_d_en, r_pcm_d_en;
 wire        l_data_valid, r_data_valid;
 wire [23:0] l_pcm_chnl, r_pcm_chnl;
 wire [47:0] l_aud_out, r_aud_out;
-    
-FIR_Tap fir_tap_l (
-    .clk                (clk),              // input              
-    .reset_n            (reset_n),          // input
-    .data_en            (l_pcm_d_en),       // input
-    .aud_data_in        (l_pcm_chnl),       // [23:0] input    
-    .coefficients       (coefficients),     // [15:0] input
-    .data_valid         (l_data_valid),     // output
-    .coef_addr          (l_coef_addr),        // [num_of_taps-1:0] output    
-    .audio_data_out     (l_aud_out)         // [47:0] output      
-);        
 
-FIR_Tap fir_tap_r(
-    .clk                (clk),              // input
-    .reset_n            (reset_n),          // input
-    .data_en            (r_pcm_d_en),       // input
-    .aud_data_in        (r_pcm_chnl),       // [23:0] input    
-    .coefficients       (coefficients),     // [15:0] input
-    .data_valid         (r_data_valid),     // output
-    .coef_addr          (r_coef_addr),        // [num_of_taps-1:0] output
-    .audio_data_out     (r_aud_out)         // [47:0] output   
-);        
+FIR_Filters (
+    .clk                (clk),                  // input
+    .reset_n            (reset_n),              // input
+    .audio_en           (audio_en),             // input, from audio_control reg
+   // coefficient signals
+    .coef_rst           (coef_rst),             // input, from audio_control reg
+    .coef_wr_en         (coef_wr_en),           // input stb when coef wr data in valid
+    .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg
+    .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
+    .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
+    .wr_addr_zero       (wr_addr_zero),         // output
+   // i2s signals 
+    .l_data_valid       (l_pcm_d_en),
+    .r_data_valid       (r_pcm_d_en),
+    .l_pcm_chnl         (l_pcm_chnl),
+    .r_pcm_chnl         (r_pcm_chnl),
+    .audio_out_l        (audio_out_l),
+    .audio_out_r        (audio_out_r)
+);
+
 
 endmodule
 

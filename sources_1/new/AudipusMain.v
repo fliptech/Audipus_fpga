@@ -65,21 +65,22 @@ parameter num_of_equalizers = 8;
         
         
         output [17:0]   test,
-        inout [9:0]     aux,
+        inout [7:0]     aux,
         output [3:0]    step_drv,
         output [3:0]    led,
         output          spdif_out
     );
     
 parameter taps_per_filter = 4;
+parameter num_of_filters = 4;
 
 // System Registers
     
     assign pcm9211_clk = pcm9211_i2s_clk_out;       // << check
     assign spdif_out = control_reg[7];              // temp
 
-    wire [15:0] control_reg;
-    wire [15:0] mpio_rd_reg, mpio_rd_reg;
+    wire [7:0] control_reg;
+    wire [7:0] mpio_rd_reg, mpio_rd_reg;
 
 //  rPix[23:22] select the spi_cs_n for each device
     assign spi_cs_fpga_n = spi_cs0_n || !(!rPix[23] && !rPix[22]);
@@ -89,13 +90,15 @@ parameter taps_per_filter = 4;
     wire [1:0] mpio_control = control_reg[3:2];
     wire [1:0] sram_control = control_reg[5:4];
     
-    wire [15:0] status = 
-        {2'b00, rPix, rPi20, rPi17, rPi16, rPi4, 
-         pcm9211_int1, pcm9211_int0, pcm9211_mpio0, pcm9211_mpio1}; 
+    wire [7:0] status = 
+        {1'b0, rPix, rPi20, rPi17, rPi16, rPi4, 
+         pcm9211_int1, pcm9211_int0}; 
 
-    wire [15:0]   fir_coef_eq01[taps_per_filter-1:0];
+    wire [7:0]   fir_coef_lsb[taps_per_filter-1:0][num_of_filters], fir_coef_msb[taps_per_filter-1:0][num_of_filters];
     
-    wire [15:0]   test_port;
+    wire [7:0]   test_port;
+    
+    wire        spi_rd_stb, spi_wr_stb;
 
     
     ClockGeneration system_clks (
@@ -127,7 +130,10 @@ parameter taps_per_filter = 4;
         .motor_interval (motor_interval),
         .aux_port       (aux),
         .test_port      (test_port),
-        .fir_coef_eq01  (fir_coef_eq01)
+        .fir_coef_eq01  (fir_coef_eq01),
+// for test
+        .rd_strobe      (spi_rd_stb),
+        .wr_strobe      (spi_wr_stb)                
     );
     
     sram_Interface sQi_interface (        
@@ -163,7 +169,8 @@ parameter taps_per_filter = 4;
         .sram_spi_clk   (spi_clk),
         .sram_spi_sio   (spi_sio),       // inout [3:0]
         
-        .fir_coef_eq01  (fir_coef_eq01)
+        .fir_coef_lsb  (fir_coef_lsb),
+        .fir_coef_msb  (fir_coef_msb)
     );
 
     PCM9211_mpio_Interface (
@@ -185,8 +192,10 @@ parameter taps_per_filter = 4;
 
 // Test Assignments
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
-    assign test[11:4] = test_port[7:0];
-    assign test[13:12] = rPix[23:22];
+    assign test[4] = spi_rd_stb;
+    assign test[5] = spi_wr_stb;
+    assign test[7:6] = rPix[23:22];    
+    assign test[15:8] = test_port[7:0];
     assign test[17] = clk;
       
     
