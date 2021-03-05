@@ -41,7 +41,8 @@ module AudioProcessing #(
     inout [3:0] sram_spi_sio,
     // cpu registers 
     input       coef_wr_en,
-    input [7:0] audio_control,      // cpu reg 
+    input [7:0] audio_control,      // cpu reg
+    input [7:0] equalizer_select, 
     input [7:0] taps_per_filter,    // cpu reg
     input [7:0] coef_wr_lsb_data,   // cpu reg
     input [7:0] coef_wr_msb_data    // cpu reg

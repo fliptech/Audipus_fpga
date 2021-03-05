@@ -121,6 +121,10 @@ parameter num_of_filters = 4;
         .spi_clk        (spi_clk),        
         .spi_mosi       (spi_mosi),
         .spi_miso       (spi_miso),
+// control signals
+        .rd_strobe      (spi_rd_stb),
+        .wr_strobe      (spi_wr_stb), 
+        .coef_wr_stb    (coef_wr_en),               
 //  registers
         .control_reg    (control_reg),          // out [15:0]
         .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
@@ -130,10 +134,14 @@ parameter num_of_filters = 4;
         .motor_interval (motor_interval),
         .aux_port       (aux),
         .test_port      (test_port),
-        .fir_coef_eq01  (fir_coef_eq01),
-// for test
-        .rd_strobe      (spi_rd_stb),
-        .wr_strobe      (spi_wr_stb)                
+      // new
+        .coef_wr_en         (coef_wr_en),
+        .audio_control      (audio_control),
+        .equalizer_select   (equalizer_select),
+        .taps_per_filter    (number_of_taps),
+        .coef_wr_lsb_data   (fir_coef_lsb),
+        .coef_wr_msb_data   (fir_coef_msb)
+
     );
     
     sram_Interface sQi_interface (        
@@ -149,28 +157,32 @@ parameter num_of_filters = 4;
     
     
     AudioProcessing (
-        .clk            (clk),
-        .reset_n        (reset_n),
-        .bypass         (control_reg[1]),
-        .i2s_sclk       (pcm9211_i2s_sclk),
-        .i2s_bclk       (pcm9211_i2s_bclk),
-        .i2s_lrclk      (pcm9211_i2s_lrclk),
-        .i2s_d          (pcm9211_i2s_d),
+        .clk                (clk),
+        .reset_n            (reset_n),
+        .i2s_sclk           (pcm9211_i2s_sclk),
+        .i2s_bclk           (pcm9211_i2s_bclk),
+        .i2s_lrclk          (pcm9211_i2s_lrclk),
+        .i2s_d              (pcm9211_i2s_d),
         
-        .dac_rst        (dac_rst),
-        .dac_sclk       (dac_sclk),
-        .dac_bclk       (dac_bclk),
-        .dac_data       (dac_data),
-        .dac_lrclk      (dac_lrclk),
-        .dac_zero_r     (dac_zero_r),
-        .dac_zero_l     (dac_zero_l),
+        .dac_rst            (dac_rst),
+        .dac_sclk           (dac_sclk),
+        .dac_bclk           (dac_bclk),
+        .dac_data           (dac_data),
+        .dac_lrclk          (dac_lrclk),
+        .dac_zero_r         (dac_zero_r),
+        .dac_zero_l         (dac_zero_l),
         
-        .sram_spi_cs    (spi_cs),
-        .sram_spi_clk   (spi_clk),
-        .sram_spi_sio   (spi_sio),       // inout [3:0]
+        .sram_spi_cs        (spi_cs),
+        .sram_spi_clk       (spi_clk),
+        .sram_spi_sio       (spi_sio),       // inout [3:0]
         
-        .fir_coef_lsb  (fir_coef_lsb),
-        .fir_coef_msb  (fir_coef_msb)
+    // cpu registers 
+        .coef_wr_en         (coef_wr_en),
+        .audio_control      (audio_control),
+        .equalizer_select   (equalizer_select),
+        .taps_per_filter    (number_of_taps),
+        .coef_wr_lsb_data   (fir_coef_lsb),
+        .coef_wr_msb_data   (fir_coef_msb)
     );
 
     PCM9211_mpio_Interface (
