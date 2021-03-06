@@ -71,15 +71,14 @@ parameter num_of_equalizers = 8;
         output          spdif_out
     );
     
-parameter taps_per_filter = 4;
 parameter num_of_filters = 4;
 
 // System Registers
     
     assign pcm9211_clk = pcm9211_i2s_clk_out;       // << check
-    assign spdif_out = control_reg[7];              // temp
+    assign spdif_out = audio_control_reg[7];        // temp << check
 
-    wire [7:0] control_reg;
+    wire [7:0] audio_control_reg;
     wire [7:0] mpio_rd_reg, mpio_rd_reg;
 
 //  rPix[23:22] select the spi_cs_n for each device
@@ -87,14 +86,12 @@ parameter num_of_filters = 4;
     assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
     
-    wire [1:0] mpio_control = control_reg[3:2];
-    wire [1:0] sram_control = control_reg[5:4];
+    wire [7:0] mpio_control;
+    wire [8:0] sram_control;
     
     wire [7:0] status = 
         {1'b0, rPix, rPi20, rPi17, rPi16, rPi4, 
          pcm9211_int1, pcm9211_int0}; 
-
-    wire [7:0]   fir_coef_lsb[taps_per_filter-1:0][num_of_filters], fir_coef_msb[taps_per_filter-1:0][num_of_filters];
     
     wire [7:0]   test_port;
     
@@ -115,33 +112,37 @@ parameter num_of_filters = 4;
     );
     
     spi_Interface sys_reg (        
-        .clk            (clk),
-        .reset_n        (reset_n),
-        .spi_cs0        (!spi_cs_fpga_n),
-        .spi_clk        (spi_clk),        
-        .spi_mosi       (spi_mosi),
-        .spi_miso       (spi_miso),
+        .clk                    (clk),
+        .reset_n                (reset_n),
+// spi signals
+        .spi_cs0                (!spi_cs_fpga_n),
+        .spi_clk                (spi_clk),        
+        .spi_mosi               (spi_mosi),
+        .spi_miso               (spi_miso),
 // control signals
-        .rd_strobe      (spi_rd_stb),
-        .wr_strobe      (spi_wr_stb), 
-        .coef_wr_stb    (coef_wr_en),               
-//  registers
-        .control_reg    (control_reg),          // out [15:0]
-        .eq_tap_sel_reg (eq_tap_sel_reg),       // eq bits 15:10, tap bits 9:0
-        .mpio_rd_reg    (mpio_rd_reg),
-        .mpio_wr_reg    (mpio_wr_reg),
-        .status         (status),                // input [9:0]
-        .motor_interval (motor_interval),
-        .aux_port       (aux),
-        .test_port      (test_port),
-      // new
-        .coef_wr_en         (coef_wr_en),
-        .audio_control      (audio_control),
-        .equalizer_select   (equalizer_select),
-        .taps_per_filter    (number_of_taps),
-        .coef_wr_lsb_data   (fir_coef_lsb),
-        .coef_wr_msb_data   (fir_coef_msb)
-
+        .rd_strobe              (spi_rd_stb),
+        .wr_strobe              (spi_wr_stb), 
+        .coef_wr_stb            (coef_wr_en),
+//  input registers, input [7:0]
+        .status                 (status),
+        .sram_to_spi_data       (sram_to_spi_data),           
+        .mpio_to_spi_data       (mpio_to_spi_data),           
+//  output registers, output [7:0]
+        // Audio
+        .audio_controll_reg     (audio_control_reg),
+        .status                 (status),
+        .taps_per_filterl_reg   (number_of_taps_reg),
+        .filter_selectl_reg     (filter_select_reg),
+        .aux_reg                (aux_reg),
+        .coef_wr_lsb_data_reg   (fir_coef_lsb),
+        .coef_wr_msb_data_reg   (fir_coef_msb),
+        //sram
+        .sram_control           (sram_control_reg),
+        .spi_to_sram_reg        (spi_to_sram_reg),
+        .sram_start_addr_reg    (sram_start_addr),
+        // mpio
+        .mpio_control_reg       (mpio_control_reg),
+        .spi_to_mpio_reg        (spi_to_mpio_reg)
     );
     
     sram_Interface sQi_interface (        
@@ -159,11 +160,12 @@ parameter num_of_filters = 4;
     AudioProcessing (
         .clk                (clk),
         .reset_n            (reset_n),
+        // input i2s
         .i2s_sclk           (pcm9211_i2s_sclk),
         .i2s_bclk           (pcm9211_i2s_bclk),
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
-        
+        //output i2s
         .dac_rst            (dac_rst),
         .dac_sclk           (dac_sclk),
         .dac_bclk           (dac_bclk),
@@ -176,7 +178,7 @@ parameter num_of_filters = 4;
         .sram_spi_clk       (spi_clk),
         .sram_spi_sio       (spi_sio),       // inout [3:0]
         
-    // cpu registers 
+    // cpu registers
         .coef_wr_en         (coef_wr_en),
         .audio_control      (audio_control),
         .equalizer_select   (equalizer_select),

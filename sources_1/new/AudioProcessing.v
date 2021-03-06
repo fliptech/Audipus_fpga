@@ -21,14 +21,16 @@
 
 
 module AudioProcessing #(
-    parameter num_of_filters = 8
+    parameter num_of_filters = 4
 )(
     input clk,
     input reset_n,
+    // i2s in
     input i2s_sclk,
     input i2s_bclk,
     input i2s_lrclk,
     input i2s_d,
+    // dac interface, i2s out
     input dac_zero_r,
     input dac_zero_l,
     output dac_rst,
@@ -36,6 +38,7 @@ module AudioProcessing #(
     output reg dac_bclk,
     output reg dac_lrclk,
     output reg dac_data,
+    // audio SRAM interface signals
     output reg sram_spi_cs,
     output reg sram_spi_clk,
     inout [3:0] sram_spi_sio,
@@ -132,6 +135,7 @@ FIR_Filters (
     .audio_out_r        (audio_out_r)
 );
 
+// Audio_SRAM_Interface () ->> to do
 
 endmodule
 
