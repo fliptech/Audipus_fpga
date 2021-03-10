@@ -21,7 +21,7 @@
 
 
 module FIR_coefficients #(
-    parameter num_of_craps
+    parameter num_of_filters = 4
 )(    
     input           clk,
     input           reset_n,

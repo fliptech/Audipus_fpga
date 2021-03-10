@@ -26,26 +26,29 @@ module FIR_Filters #(
     input           clk,
     input           reset_n,
     input           audio_en,
+    // coefficient signals   
     input           coef_rst,
     input           coef_wr_en,
     input [7:0]     coef_wr_lsb_data,
     input [7:0]     coef_wr_msb_data,
     input [7:0]     taps_per_filter,   
     output          wr_addr_zero,
-    
+    // i2s signals
     input           l_data_valid,   // strobe
     input           r_data_valid,   // strobe
     input [23:0]    l_pcm_chnl,
     input [23:0]    r_pcm_chnl,
-    
-    output [47:0]   audio_out_l,
-    output [47:0]   audio_out_r
+    // audio out
+    output [47:0]   l_audio_out[num_of_filters - 1 :0],
+    output [47:0]   r_audio_out[num_of_filters - 1 :0]
      
 );
 
 reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
 reg fir_en;
 wire [23:0] l_buf_data_out, r_buf_data_out;
+
+wire [15:0] coefficients[num_of_filters - 1 :0];
 
 
 // circular buffer
@@ -117,14 +120,14 @@ generate
             .clk                (clk),              // input
             .reset_n            (reset_n),          // input
             .coef_rst           (coef_rst),         // input
-            .wr_en              (coef_wr_en),       // input
-            .rd_en              (fir_en),           // input 
+            .wr_en              (coef_wr_en[i]),       // input
+            .rd_en              (coef_rd_en[i]),           // input 
             .coef_wr_lsb_data   (coef_wr_lsb_data), // [7:0] input   
             .coef_wr_msb_data   (coef_wr_msb_data), // [7:0] input 
             .taps_per_filter    (taps_per_filter),  // [7:0] input
             .coef_rd_addr       (buf_rd_counter),   // [7:0] input
             .wr_addr_zero       (coef_wr_addr_zero),// output
-            .coefficients       (coefficients)      // [15:0] output
+            .coefficients       (coefficients[i])      // [15:0] output
         );    
         
         
@@ -135,20 +138,19 @@ generate
             .audio_en           (audio_en),         // input
             .data_en            (fir_en),           // input
             .aud_data_in        (l_buf_data_out),   // [23:0] input    
-            .coefficients       (coefficients),     // [15:0] input
+            .coefficients       (coefficients[i]),     // [15:0] input
             .data_valid         (l_data_valid),     // output
-            .audio_data_out     (l_aud_out)         // [47:0] output      
+            .audio_data_out     (l_audio_out[i])         // [47:0] output      
         );        
         
         FIR_Tap fir_tap_r (
             .clk                (clk),              // input
             .reset_n            (reset_n),          // input
-            .data_en            (r_pcm_d_en),       // input
+            .audio_en           (r_pcm_d_en),       // input
             .aud_data_in        (r_buf_data_out),   // [23:0] input    
-            .coefficients       (coefficients),     // [15:0] input
+            .coefficients       (coefficients[i]),     // [15:0] input
             .data_valid         (r_data_valid),     // output
-            .coef_addr          (r_coef_addr),      // [num_of_taps-1:0] output
-            .audio_data_out     (r_aud_out)         // [47:0] output   
+            .audio_data_out     (r_audio_out[i])         // [47:0] output   
         );
     end        
 endgenerate 

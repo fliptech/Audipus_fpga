@@ -94,7 +94,7 @@ end
 // spi shift out register  
 always @ (posedge clk) begin
      if (spi_cs0 && shift_out_clken) begin
-        spi_miso_d <= spi_shift_out_data[num_of_data_bits];
+        spi_miso_d <= spi_shift_out_data[num_of_data_bits - 1];
         if  (spi_addr_stb) begin   
 //            spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
             spi_shift_out_data[num_of_data_bits-1:0] <=  8'h55;             // for test

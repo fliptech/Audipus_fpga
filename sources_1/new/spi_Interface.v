@@ -23,9 +23,9 @@
 module spi_Interface # (
     parameter num_of_filters = 4    
 ) (
-// spi_signals
     input       clk,
     input       reset_n,
+// spi_signals
     input       spi_cs0,
     input       spi_clk,        
     input       spi_mosi,
@@ -40,19 +40,23 @@ module spi_Interface # (
     input [7:0]         mpio_to_spi_data,
      
 //  output registers
+    // Audio
     output reg [7:0]    audio_control_reg,
     output reg [7:0]    taps_per_filter_reg,
     output reg [7:0]    filter_select_reg,
-    output reg [7:0]    aux_reg,
     output reg [7:0]    control_reg,
     output reg [7:0]    coef_wr_lsb_data_reg,
     output reg [7:0]    coef_wr_msb_data_reg,
+    // sram
     output reg [7:0]    sram_control_reg,
     output reg [7:0]    sram_start_addr_reg,
     output reg [7:0]    spi_to_sram_reg,
+    // mpio
     output reg [7:0]    mpio_control_reg,
-    output reg [7:0]    spi_to_mpio_reg
-//  for test
+    output reg [7:0]    spi_to_mpio_reg,
+//  aux
+    output reg [7:0]    aux_reg
+
         
 );
 
@@ -83,8 +87,8 @@ rPi_Interface rpi (
     .spi_clk        (spi_clk),        
     .spi_mosi       (spi_mosi),     // input
     .spi_miso       (spi_miso),     // output tri
-    .reg_read_stb   (rd_strobe),
-    .reg_write_stb  (wr_strobe),
+    .spi_read_stb   (rd_strobe),
+    .spi_write_stb  (wr_strobe),
     .spi_addr       (spi_addr),
     .spi_write_data (spi_write_data),
     .spi_read_data  (spi_read_data) 
@@ -93,8 +97,8 @@ rPi_Interface rpi (
 
 
 
-
-wire    spi_write_data, spi_read_data;
+wire [6:0]  spi_addr;
+wire [7:0]  spi_write_data, spi_read_data;
 
 
 // Register Write
