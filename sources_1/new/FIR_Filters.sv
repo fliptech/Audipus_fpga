@@ -28,14 +28,13 @@ module FIR_Filters #(
     input           audio_en,
     // coefficient signals   
     input           coef_rst,
-    input           coef_wr_en,
+    input           coefficient_wr_en,
+    input [3:0]     coef_select,
     input [7:0]     coef_wr_lsb_data,
     input [7:0]     coef_wr_msb_data,
     input [7:0]     taps_per_filter,   
     output          wr_addr_zero,
     // i2s signals
-    input           l_data_valid,   // strobe
-    input           r_data_valid,   // strobe
     input [23:0]    l_pcm_chnl,
     input [23:0]    r_pcm_chnl,
     // audio out
@@ -48,21 +47,24 @@ reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
 reg fir_en;
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
-wire [15:0] coefficients[num_of_filters - 1 :0];
+wire [15:0] coefficients[num_of_filters - 1 : 0];
+reg [num_of_filters - 1 : 0]   coef_wr_en;
+
+// Coefficient write mux
 
 
-// circular buffer
+// circular buffer control
 always @ (posedge clk) begin
     if (!reset_n || !audio_en) begin
-        buf_rd_addr <= 0;
+        buf_rd_addr <= taps_per_filter - 1;
         buf_rd_counter <= 0;
-        buf_pntr <= 0;
+        buf_pntr <= taps_per_filter - 1;
     end
     else begin
 //      if (buf_rd_counter == (taps_per_filter - 1)) begin
-        if (r_data_valid) begin
+        if (r_data_valid) begin         // if new audio sample
             buf_rd_counter <= 0;
-            buf_pntr = buf_pntr + 1;
+            buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
         end
         else if (fir_en) begin            
@@ -90,44 +92,47 @@ always @ (posedge clk) begin
         fir_en <= fir_en;
 end        
 
-         
+// circular buffer control
+
+// left         
 circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_valid),    // input wire we
-  .a(buf_rd_pntr),      // input wire [7 : 0] a
+  .we(r_data_valid),    // input wire we >>> r is correct <<<; wr to buf one clk before fir_en
+  .a(buf_pntr),         // input wire [7 : 0] a (wr)
   .d(l_pcm_chnl),       // input wire [23 : 0] d
-  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra
+  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(l_buf_data_out)  // output wire [23 : 0] dpo
 );
 
-         
+// right        
 circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_valid),    // input wire we
-  .a(buf_rd_pntr),      // input wire [7 : 0] a
+  .we(r_data_valid),    // input wire we; wr to buf one clk before fir_en
+  .a(buf_pntr),         // input wire [7 : 0] a (wr) 
   .d(r_pcm_chnl),       // input wire [23 : 0] d
-  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra
+  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(r_buf_data_out)  // output wire [23 : 0] dpo
 );
 
 // Generate the number of filters for the Equalizer
 genvar i;
+
 generate
     for (i = 0; i < num_of_filters; i = i + 1) 
     begin: fir_instantiate
 
-        FIR_coefficients  (
+        FIR_coefficients fir_coef (
             .clk                (clk),              // input
             .reset_n            (reset_n),          // input
             .coef_rst           (coef_rst),         // input
-            .wr_en              (coef_wr_en[i]),       // input
-            .rd_en              (coef_rd_en[i]),           // input 
+            .wr_en              (coef_wr_en[i]),    // input
+            .rd_en              (fir_en),           // input 
             .coef_wr_lsb_data   (coef_wr_lsb_data), // [7:0] input   
             .coef_wr_msb_data   (coef_wr_msb_data), // [7:0] input 
             .taps_per_filter    (taps_per_filter),  // [7:0] input
             .coef_rd_addr       (buf_rd_counter),   // [7:0] input
-            .wr_addr_zero       (coef_wr_addr_zero),// output
-            .coefficients       (coefficients[i])      // [15:0] output
+            .wr_addr_zero       (wr_addr_zero),     // output
+            .coefficients       (coefficients[i])   // [15:0] output
         );    
         
         
@@ -138,21 +143,27 @@ generate
             .audio_en           (audio_en),         // input
             .data_en            (fir_en),           // input
             .aud_data_in        (l_buf_data_out),   // [23:0] input    
-            .coefficients       (coefficients[i]),     // [15:0] input
-            .data_valid         (l_data_valid),     // output
-            .audio_data_out     (l_audio_out[i])         // [47:0] output      
+            .coefficients       (coefficients[i]),  // [15:0] input
+            .audio_data_out     (l_audio_out[i])    // [47:0] output      
         );        
         
         FIR_Tap fir_tap_r (
-            .clk                (clk),              // input
+            .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-            .audio_en           (r_pcm_d_en),       // input
+            .audio_en           (audio_en),         // input
+            .data_en            (fir_en),           // input
             .aud_data_in        (r_buf_data_out),   // [23:0] input    
-            .coefficients       (coefficients[i]),     // [15:0] input
-            .data_valid         (r_data_valid),     // output
-            .audio_data_out     (r_audio_out[i])         // [47:0] output   
-        );
-    end        
+            .coefficients       (coefficients[i]),  // [15:0] input
+            .audio_data_out     (r_audio_out[i])    // [47:0] output      
+        );        
+        
+    
+        always @ (posedge clk) begin    
+            coef_wr_en[i] <= (coef_select == i) ?  coefficient_wr_en : 1'b0; 
+        end
+        
+    end     // for loop 
+         
 endgenerate 
 
 endmodule

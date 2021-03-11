@@ -21,7 +21,9 @@
 
 
 module spi_Interface # (
-    parameter num_of_filters = 4    
+    parameter num_of_filters = 4,    
+    parameter num_of_addr_bits = 7,     // includes r/w bit
+    parameter num_of_data_bits = 8    
 ) (
     input       clk,
     input       reset_n,
@@ -34,6 +36,7 @@ module spi_Interface # (
     output              rd_strobe,
     output              wr_strobe,
     output reg          coef_wr_stb,
+    output reg          eq_wr_stb,
 //  input registers
     input [7:0]         status,  
     input [7:0]         sram_to_spi_data,
@@ -44,9 +47,10 @@ module spi_Interface # (
     output reg [7:0]    audio_control_reg,
     output reg [7:0]    taps_per_filter_reg,
     output reg [7:0]    filter_select_reg,
-    output reg [7:0]    control_reg,
     output reg [7:0]    coef_wr_lsb_data_reg,
     output reg [7:0]    coef_wr_msb_data_reg,
+    output reg [7:0]    eq_wr_lsb_data_reg,
+    output reg [7:0]    eq_wr_msb_data_reg,
     // sram
     output reg [7:0]    sram_control_reg,
     output reg [7:0]    sram_start_addr_reg,
@@ -59,6 +63,12 @@ module spi_Interface # (
 
         
 );
+
+reg filter_tap, filter;
+      
+wire [num_of_data_bits-1:0]  spi_write_data, spi_read_data;
+wire [num_of_addr_bits-1:0]  spi_addr;
+
 
 //	GENERAL REGISTERS	
 //	Write / Read
@@ -76,9 +86,11 @@ module spi_Interface # (
 	parameter MPIO_CONTROL     = 7'h0b;    // selects: which MPIO to be accressed, IO direction for eack bit
 	parameter SPI_TO_MPIO      = 7'h0c;    // write, mpio->spi, for selected mpio and based on IO directions      
 	parameter MPIO_TO_SPI      = 7'h0d;    // read, spi->mpio for selected mpio and based on IO directions
+	parameter EQ_GAIN_LSB      = 7'h0e;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
+	parameter EQ_GAIN_MSB      = 7'h0f;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
 	
 
-    reg filter_tap, filter;
+
 
 rPi_Interface rpi (
     .clk            (clk),
@@ -95,12 +107,6 @@ rPi_Interface rpi (
 );
 
 
-
-
-wire [6:0]  spi_addr;
-wire [7:0]  spi_write_data, spi_read_data;
-
-
 // Register Write
 always @ (posedge clk) begin
 
@@ -111,6 +117,8 @@ always @ (posedge clk) begin
 			else if (spi_addr == FILTER_SEL)     filter_select_reg           <= spi_write_data;
 			else if (spi_addr == FIR_COEF_LSB)   coef_wr_lsb_data_reg        <= spi_write_data;
 			else if (spi_addr == FIR_COEF_MSB)   coef_wr_msb_data_reg        <= spi_write_data;
+			else if (spi_addr == EQ_GAIN_LSB)    eq_wr_lsb_data_reg          <= spi_write_data;
+			else if (spi_addr == EQ_GAIN_MSB)    eq_wr_msb_data_reg          <= spi_write_data;
 			else if (spi_addr == SRAM_CONTROL)   sram_control_reg            <= spi_write_data;
 			else if (spi_addr == SRAM_ADDR)      sram_start_addr_reg         <= spi_write_data;
 			else if (spi_addr == SPI_TO_SRAM)    spi_to_sram_reg             <= spi_write_data;
@@ -138,6 +146,7 @@ assign spi_read_data =
 
 always @ (posedge clk) begin
     coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;
+    eq_wr_stb <= (spi_addr == EQ_GAIN_MSB) && wr_strobe;
 end
 
         

@@ -74,6 +74,41 @@ parameter num_of_equalizers = 8;
 parameter num_of_filters = 4;
 
 
+// System Registers
+    
+
+// CONNECTIONS
+
+// audio connections
+    wire        coef_wr_en;
+    wire        eq_wr_en;
+    wire [7:0] audio_control_reg;
+    wire [7:0] filter_select_reg;
+    wire [7:0] number_of_taps_reg;
+    wire [7:0] fir_coef_msb, fir_coef_lsb;
+// sram connections 
+    wire [7:0] sram_to_spi_data, spi_to_sram_reg;   
+    wire [7:0] sram_control;
+// aux connections   
+    wire [7:0] aux_reg; 
+    assign aux = {2'b00, aux_reg};   
+// mpio connections    
+    wire [7:0] mpio_control_reg;
+    wire [7:0] mpio_to_spi_data, spi_to_mpio_reg;
+    
+    wire [7:0] eq_gain_lsb, eq_gain_msb;
+    
+    
+
+        
+    wire [7:0] status = 
+        {1'b0, rPix, rPi20, rPi17, dac_zero_l, dac_zero_r, 
+         pcm9211_int1, pcm9211_int0}; 
+    
+    wire [7:0]   test_port;
+    
+    wire        spi_rd_stb, spi_wr_stb;
+
 // ASSIGNMENTS
 
     assign pcm9211_clk = pcm9211_i2s_clk_out;       // << check
@@ -87,34 +122,6 @@ parameter num_of_filters = 4;
     //audio control register
     assign spdif_out = audio_control_reg[7];        // temp << check
 
-// System Registers
-    
-
-// CONNECTIONS
-
-// audio connections
-    wire [7:0] audio_control_reg;
-    wire [7:0] filter_select_reg;
-    wire [7:0] number_of_taps_reg;
-// sram connections 
-    wire [7:0] sram_to_spi_data, spi_to_sram_reg;   
-    wire [7:0] sram_control;
-// aux connections   
-    wire [7:0] aux_reg; 
-    assign aux = {2'b00, aux_reg};   
-// mpio connections    
-    wire [7:0] mpio_control_reg;
-    wire [7:0] mpio_to_spi_data, spi_to_mpio_reg;
-    
-
-        
-    wire [7:0] status = 
-        {1'b0, rPix, rPi20, rPi17, dac_zero_l, dac_zero_r, 
-         pcm9211_int1, pcm9211_int0}; 
-    
-    wire [7:0]   test_port;
-    
-    wire        spi_rd_stb, spi_wr_stb;
 
     
     ClockGeneration system_clks (
@@ -130,6 +137,7 @@ parameter num_of_filters = 4;
         .led        (led)       // out[3:0]
     );
     
+/////////// SPI  \\\\\\\\\\\    
     spi_Interface sys_reg (        
         .clk                    (clk),
         .reset_n                (reset_n),
@@ -142,17 +150,20 @@ parameter num_of_filters = 4;
         .rd_strobe              (spi_rd_stb),
         .wr_strobe              (spi_wr_stb), 
         .coef_wr_stb            (coef_wr_en),
+        .eq_wr_stb              (eq_wr_en),
 //  input registers, input [7:0]
         .status                 (status),
         .sram_to_spi_data       (sram_to_spi_data),           
         .mpio_to_spi_data       (mpio_to_spi_data),           
 //  output registers, output [7:0]
         // Audio
-        .audio_control_reg     (audio_control_reg),
-        .taps_per_filter_reg   (number_of_taps_reg),
-        .filter_select_reg     (filter_select_reg),
+        .audio_control_reg      (audio_control_reg),
+        .taps_per_filter_reg    (number_of_taps_reg),
+        .filter_select_reg      (filter_select_reg),
         .coef_wr_lsb_data_reg   (fir_coef_lsb),
         .coef_wr_msb_data_reg   (fir_coef_msb),
+        .eq_wr_lsb_data_reg     (eq_gain_lsb),
+        .eq_wr_msb_data_reg     (eq_gain_msb),
         //sram
         .sram_control_reg       (sram_control_reg),
         .sram_start_addr_reg    (sram_start_addr),
@@ -176,7 +187,7 @@ parameter num_of_filters = 4;
     );
     
     
-    AudioProcessing (
+    AudioProcessing aud_proc (
         .clk                (clk),
         .reset_n            (reset_n),
         // input i2s
@@ -196,15 +207,18 @@ parameter num_of_filters = 4;
         .sram_spi_sio       (spi_sio),       // inout [3:0]       
         // cpu registers
         .coef_wr_en         (coef_wr_en),
+        .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
         .equalizer_select   (filter_select_reg),
         .taps_per_filter    (number_of_taps_reg),
         .coef_wr_lsb_data   (fir_coef_lsb),
-        .coef_wr_msb_data   (fir_coef_msb)
+        .coef_wr_msb_data   (fir_coef_msb),
+        .eq_wr_lsb_data     (eq_gain_lsb),
+        .eq_wr_msb_data     (eq_gain_msb)
     );
     
 
-    PCM9211_mpio_Interface (
+    PCM9211_mpio_Interface mpio (
         .mpio_control   (mpio_control_reg),     // input[1:0]
         .mpioa          (pcm9211_mpioA),
         .mpiob          (pcm9211_mpioB),

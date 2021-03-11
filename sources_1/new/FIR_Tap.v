@@ -27,8 +27,7 @@ module FIR_Tap (
     input data_en,                  
     input [15:0] coefficients,
     input [23:0] aud_data_in,
-    output data_valid,
-    output [31:0] audio_data_out
+    output [47:0] audio_data_out
 );
 
 
@@ -59,7 +58,6 @@ fir_accumulator fir_accum (
   .B            (mult_dout[39:8]),      // input wire [31 : 0] B
   .Q            (audio_d_out)           // output wire [47 : 0] Q
 );
-
 
         
 endmodule
