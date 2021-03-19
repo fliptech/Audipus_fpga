@@ -34,20 +34,25 @@ module rPi_Interface # (
     output reg  spi_write_stb,
     output reg  [num_of_addr_bits-1:0]  spi_addr,
     output reg  [num_of_data_bits-1:0]  spi_write_data,
-    input       [num_of_data_bits-1:0]  spi_read_data 
+    input       [num_of_data_bits-1:0]  spi_read_data,
+    output reg  [4:0]                   spi_bit_count,
+    output reg  [2:0]                   spi_shift_clk,
+    output reg                          shift_in_clken
 
 );
 
 parameter num_of_shift_bits = num_of_addr_bits + num_of_data_bits + 1;  // +1 for r/w bit
 
-reg         shift_in_clken = 0, shift_out_clken = 0;        // spi clk enable
+//reg         shift_in_clken = 0, shift_out_clken = 0;        // spi clk enable
+reg         shift_out_clken;        // spi clk enable
 reg         spi_write = 0;                                  // spi write / read mode
 
 reg         spi_addr_stb = 0;
-assign      spi_read_stb = spi_addr_stb && !spi_write;
+//assign      spi_read_stb = spi_addr_stb && !spi_write;
+assign      spi_read_stb = spi_addr_stb;                    // <<< for test
 
-reg [4:0]                   spi_bit_count = 0;
-reg [2:0]                   spi_shift_clk;
+//reg [4:0]                   spi_bit_count = 0;
+//reg [2:0]                   spi_shift_clk;
 reg [num_of_shift_bits-1:0] spi_shift_in_data;
 reg [num_of_data_bits-1:0]  spi_shift_out_data;
 
@@ -62,11 +67,11 @@ assign spi_miso = miso_tristate ? 1'bz : spi_miso_d;
 always @ (posedge clk) begin
     spi_shift_clk[0] <= spi_clk;
     spi_shift_clk[2:1] <= spi_shift_clk[1:0];
-    if (spi_shift_clk == 3'b001) begin          // positive edge
+    if (spi_shift_clk == 3'b011) begin          // positive edge
         shift_in_clken <= 1'b1;
         shift_out_clken <= 1'b0;
     end
-    else if (spi_shift_clk == 3'b110) begin     // negative edge
+    else if (spi_shift_clk == 3'b100) begin     // negative edge
         shift_out_clken <= 1'b1;
         shift_in_clken <= 1'b0;
     end
@@ -119,19 +124,27 @@ always @ (posedge clk) begin
         spi_addr_stb <= 0;
         spi_addr <= 0;
     end
-    else if (shift_in_clken) begin
-        spi_bit_count <= spi_bit_count + 1;
-        if (spi_bit_count == 5'b00000) begin
-            spi_write <= !spi_mosi;
-            miso_tristate <= 1'b1;
-            spi_addr_stb <= 0;
-            spi_addr <= spi_addr;
-        end
-        else if (spi_bit_count == num_of_addr_bits) begin
-            spi_addr_stb <= 1'b1;
-//            spi_addr <= spi_shift_in_data[1:num_of_addr_bits]; //<<<<<<
-            spi_addr <= spi_shift_in_data[num_of_addr_bits-1:0];    // lob off the r/w bit7
-            miso_tristate <= 1'b0;
+    else begin
+        if (shift_in_clken) begin
+            spi_bit_count <= spi_bit_count + 1;
+            if (spi_bit_count == 5'b00000) begin
+                spi_write <= !spi_mosi;
+                miso_tristate <= 1'b1;
+                spi_addr_stb <= 0;
+                spi_addr <= spi_addr;
+            end
+            else if (spi_bit_count == num_of_addr_bits) begin
+                spi_addr_stb <= 1'b1;
+    //            spi_addr <= spi_shift_in_data[1:num_of_addr_bits]; //<<<<<<
+                spi_addr <= spi_shift_in_data[num_of_addr_bits-1:0];    // lob off the r/w bit7
+                miso_tristate <= 1'b0;
+            end
+            else begin
+                spi_addr_stb <= 0;
+                miso_tristate <= miso_tristate;
+                spi_write <= spi_write;
+                spi_addr <= spi_addr;
+            end
         end
         else begin
             spi_addr_stb <= 0;

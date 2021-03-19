@@ -59,9 +59,11 @@ module spi_Interface # (
     output reg [7:0]    mpio_control_reg,
     output reg [7:0]    spi_to_mpio_reg,
 //  aux
-    output reg [7:0]    aux_reg
-
-        
+    output reg [7:0]    aux_reg,
+    output [4:0]        spi_bit_count,
+    output [2:0]        spi_shift_clk,
+    output              shift_in_clken
+       
 );
 
 reg filter_tap, filter;
@@ -103,7 +105,10 @@ rPi_Interface rpi (
     .spi_write_stb  (wr_strobe),
     .spi_addr       (spi_addr),
     .spi_write_data (spi_write_data),
-    .spi_read_data  (spi_read_data) 
+    .spi_read_data  (spi_read_data),
+    .spi_bit_count  (spi_bit_count),
+    .spi_shift_clk  (spi_shift_clk),
+    .shift_in_clken (shift_in_clken) 
 );
 
 
@@ -142,7 +147,7 @@ assign spi_read_data =
             (rd_strobe && (spi_addr == MPIO_TO_SPI))    ?   mpio_to_spi_data :
             (rd_strobe && (spi_addr == AUX))            ?   aux_reg :
             
-            16'hdead;
+            8'hc3;
 
 always @ (posedge clk) begin
     coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;

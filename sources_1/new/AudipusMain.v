@@ -105,9 +105,15 @@ parameter num_of_filters = 4;
         {1'b0, rPix, rPi20, rPi17, dac_zero_l, dac_zero_r, 
          pcm9211_int1, pcm9211_int0}; 
     
-    wire [7:0]   test_port;
+    wire [7:0]   sram_control_reg;
     
     wire        spi_rd_stb, spi_wr_stb;
+    
+    //test
+    wire [4:0]       spi_bit_count;
+    wire [2:0]       spi_shift_clk;
+    wire            shift_in_clken;
+    
 
 // ASSIGNMENTS
 
@@ -172,7 +178,11 @@ parameter num_of_filters = 4;
         .mpio_control_reg       (mpio_control_reg),
         .spi_to_mpio_reg        (spi_to_mpio_reg),
         // aux
-        .aux_reg                (aux_reg[7:0])       
+        .aux_reg                (aux_reg),
+        // test
+        .spi_bit_count          (spi_bit_count),
+        .spi_shift_clk          (spi_shift_clk),
+        .shift_in_clken         (shift_in_clken)       
     );
     
     sram_Interface sQi_interface (        
@@ -239,9 +249,11 @@ parameter num_of_filters = 4;
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
     assign test[4] = spi_rd_stb;
     assign test[5] = spi_wr_stb;
-    assign test[7:6] = rPix[23:22];    
-    assign test[15:8] = test_port[7:0];
+    assign test[6] = rPix[22]; 
+    assign test[7] = shift_in_clken;   
+    assign test[12:8] = spi_bit_count;
+    assign test[15:13] = spi_shift_clk;
     assign test[17] = clk;
       
-    
+  
 endmodule
