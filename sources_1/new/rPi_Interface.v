@@ -35,30 +35,29 @@ module rPi_Interface # (
     output reg  [num_of_addr_bits-1:0]  spi_addr,
     output reg  [num_of_data_bits-1:0]  spi_write_data,
     input       [num_of_data_bits-1:0]  spi_read_data,
-    output reg  [4:0]                   spi_bit_count,
-    output reg  [2:0]                   spi_shift_clk,
-    output reg                          shift_in_clken
+    output reg                          shift_in_clken,
+    output reg                          shift_out_clken,
+    output reg                          miso_tristate
 
 );
 
 parameter num_of_shift_bits = num_of_addr_bits + num_of_data_bits + 1;  // +1 for r/w bit
 
-//reg         shift_in_clken = 0, shift_out_clken = 0;        // spi clk enable
-reg         shift_out_clken;        // spi clk enable
-reg         spi_write = 0;                                  // spi write / read mode
+//reg         shift_in_clken, shift_out_clken;        // spi clk enable
+reg         spi_write;                                  // spi write / read mode
 
-reg         spi_addr_stb = 0;
-//assign      spi_read_stb = spi_addr_stb && !spi_write;
-assign      spi_read_stb = spi_addr_stb;                    // <<< for test
+reg         spi_addr_stb;
+assign      spi_read_stb = spi_addr_stb && !spi_write;
+//assign      spi_read_stb = spi_addr_stb;                    // <<< for test
 
-//reg [4:0]                   spi_bit_count = 0;
-//reg [2:0]                   spi_shift_clk;
+reg [4:0]                   spi_bit_count = 0;
+reg [2:0]                   spi_shift_clk;
 reg [num_of_shift_bits-1:0] spi_shift_in_data;
 reg [num_of_data_bits-1:0]  spi_shift_out_data;
 
 reg         spi_cs0_dly;
 reg         spi_miso_d;
-reg         miso_tristate;
+//reg         miso_tristate;
 
 assign spi_miso = miso_tristate ? 1'bz : spi_miso_d;
 
@@ -82,7 +81,7 @@ always @ (posedge clk) begin
 end
     
     
-// spi shift in register 
+// spi shift in register ... Master write, Audipus input
 always @ (posedge clk) begin
      if (spi_cs0 && shift_in_clken) begin
         spi_shift_in_data[0] <= spi_mosi;
@@ -96,11 +95,11 @@ end
 
 
 
-// spi shift out register  
+// spi shift out register ... Master rd, Audipus output 
 always @ (posedge clk) begin
      if (spi_cs0 && shift_out_clken) begin
         spi_miso_d <= spi_shift_out_data[num_of_data_bits-1];
-        if  (spi_addr_stb) begin   
+        if  (spi_bit_count == num_of_addr_bits) begin   
 //            spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
             spi_shift_out_data[num_of_data_bits-1:0] <=  8'h55;             // for test
         end

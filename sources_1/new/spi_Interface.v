@@ -60,10 +60,10 @@ module spi_Interface # (
     output reg [7:0]    spi_to_mpio_reg,
 //  aux
     output reg [7:0]    aux_reg,
-    output [4:0]        spi_bit_count,
-    output [2:0]        spi_shift_clk,
-    output              shift_in_clken
-       
+//  for test
+    output              shift_in_clken,
+    output              shift_out_clken,
+    output              miso_tristate
 );
 
 reg filter_tap, filter;
@@ -106,9 +106,10 @@ rPi_Interface rpi (
     .spi_addr       (spi_addr),
     .spi_write_data (spi_write_data),
     .spi_read_data  (spi_read_data),
-    .spi_bit_count  (spi_bit_count),
-    .spi_shift_clk  (spi_shift_clk),
-    .shift_in_clken (shift_in_clken) 
+    // vv for test vv
+    .shift_in_clken (shift_in_clken), 
+    .shift_out_clken (shift_out_clken),
+    .miso_tristate  (miso_tristate)
 );
 
 

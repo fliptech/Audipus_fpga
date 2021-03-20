@@ -76,9 +76,9 @@ parameter num_of_filters = 4;
 
 // System Registers
     
-
-// CONNECTIONS
-
+////////////////////
+//   CONNECTIONS  //
+////////////////////
 // audio connections
     wire        coef_wr_en;
     wire        eq_wr_en;
@@ -112,7 +112,8 @@ parameter num_of_filters = 4;
     //test
     wire [4:0]       spi_bit_count;
     wire [2:0]       spi_shift_clk;
-    wire            shift_in_clken;
+    wire            shift_in_clken, shift_out_clken;
+    wire            miso_tristate;
     
 
 // ASSIGNMENTS
@@ -180,9 +181,9 @@ parameter num_of_filters = 4;
         // aux
         .aux_reg                (aux_reg),
         // test
-        .spi_bit_count          (spi_bit_count),
-        .spi_shift_clk          (spi_shift_clk),
-        .shift_in_clken         (shift_in_clken)       
+        .shift_in_clken         (shift_in_clken),       
+        .shift_out_clken        (shift_out_clken),
+        .miso_tristate          (miso_tristate)       
     );
     
     sram_Interface sQi_interface (        
@@ -249,10 +250,11 @@ parameter num_of_filters = 4;
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
     assign test[4] = spi_rd_stb;
     assign test[5] = spi_wr_stb;
-    assign test[6] = rPix[22]; 
-    assign test[7] = shift_in_clken;   
-    assign test[12:8] = spi_bit_count;
-    assign test[15:13] = spi_shift_clk;
+    assign test[6] = shift_out_clken; 
+    assign test[7] = shift_in_clken;  
+    assign test[8] =  miso_tristate;
+//    assign test[12:8] = ;
+//    assign test[15:13] = ;
     assign test[17] = clk;
       
   
