@@ -100,9 +100,8 @@ always @ (posedge clk) begin
      if (spi_cs0 && shift_out_clken) begin
         spi_miso_d <= spi_shift_out_data[num_of_data_bits-1];
         if  (spi_bit_count == num_of_addr_bits) begin   
-//            spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
-            spi_shift_out_data[num_of_data_bits-1:0] <=  8'h55;             // for test
-        end
+            spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
+         end
         else begin            
             spi_shift_out_data[0] <= 1'b0;
             spi_shift_out_data[num_of_data_bits-1:1] <= spi_shift_out_data[num_of_data_bits-2:0];

@@ -131,7 +131,6 @@ always @ (posedge clk) begin
 			else if (spi_addr == MPIO_CONTROL)   mpio_control_reg            <= spi_write_data;
 			else if (spi_addr == SPI_TO_MPIO)    spi_to_mpio_reg             <= spi_write_data;
 			else if (spi_addr == AUX)            aux_reg                     <= spi_write_data;
-
     end
 end
 
@@ -148,7 +147,7 @@ assign spi_read_data =
             (rd_strobe && (spi_addr == MPIO_TO_SPI))    ?   mpio_to_spi_data :
             (rd_strobe && (spi_addr == AUX))            ?   aux_reg :
             
-            8'hc3;
+            8'h99;
 
 always @ (posedge clk) begin
     coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;
