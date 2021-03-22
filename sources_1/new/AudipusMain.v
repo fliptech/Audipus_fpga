@@ -110,10 +110,11 @@ parameter num_of_filters = 4;
     wire        spi_rd_stb, spi_wr_stb;
     
     //test
-    wire [4:0]       spi_bit_count;
-    wire [2:0]       spi_shift_clk;
+//    wire [4:0]       spi_bit_count;
+//    wire [2:0]       spi_shift_clk;
     wire            shift_in_clken, shift_out_clken;
     wire            miso_tristate;
+    wire [6:0]      spi_addr;
     
 
 // ASSIGNMENTS
@@ -183,7 +184,8 @@ parameter num_of_filters = 4;
         // test
         .shift_in_clken         (shift_in_clken),       
         .shift_out_clken        (shift_out_clken),
-        .miso_tristate          (miso_tristate)       
+        .miso_tristate          (miso_tristate), 
+        .spi_addr               (spi_addr)      
     );
     
     sram_Interface sQi_interface (        
@@ -253,7 +255,7 @@ parameter num_of_filters = 4;
     assign test[6] = shift_out_clken; 
     assign test[7] = shift_in_clken;  
     assign test[8] =  miso_tristate;
-//    assign test[12:8] = ;
+    assign test[15:9] = spi_addr;
 //    assign test[15:13] = ;
     assign test[17] = clk;
       

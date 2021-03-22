@@ -63,13 +63,15 @@ module spi_Interface # (
 //  for test
     output              shift_in_clken,
     output              shift_out_clken,
-    output              miso_tristate
+    output              miso_tristate,
+    output [num_of_addr_bits-1:0]  spi_addr
 );
 
 reg filter_tap, filter;
       
-wire [num_of_data_bits-1:0]  spi_write_data, spi_read_data;
-wire [num_of_addr_bits-1:0]  spi_addr;
+reg [num_of_data_bits-1:0]      spi_read_data;
+wire [num_of_data_bits-1:0]     spi_write_data;
+//wire [num_of_addr_bits-1:0]  spi_addr;
 
 
 //	GENERAL REGISTERS	
@@ -135,19 +137,25 @@ always @ (posedge clk) begin
 end
 
 // Register Read
-assign spi_read_data = 
-            (rd_strobe && (spi_addr == AUD_CONTROL))    ?   audio_control_reg :
-            (rd_strobe && (spi_addr == STATUS))         ?   status :
-            (rd_strobe && (spi_addr == NUM_FIR_TAPS))   ?   taps_per_filter_reg :
-            (rd_strobe && (spi_addr == FILTER_SEL))     ?   filter_select_reg :
-            (rd_strobe && (spi_addr == SRAM_CONTROL))   ?   sram_control_reg :
-            (rd_strobe && (spi_addr == SRAM_ADDR))      ?   sram_start_addr_reg :
-            (rd_strobe && (spi_addr == SRAM_TO_SPI))    ?   sram_to_spi_data :
-            (rd_strobe && (spi_addr == MPIO_CONTROL))   ?   mpio_control_reg :
-            (rd_strobe && (spi_addr == MPIO_TO_SPI))    ?   mpio_to_spi_data :
-            (rd_strobe && (spi_addr == AUX))            ?   aux_reg :
+always @ (posedge clk) begin
+	if (rd_strobe) begin
+        spi_read_data <= 
+            (spi_addr == AUD_CONTROL)    ?   audio_control_reg :
+            (spi_addr == STATUS)         ?   status :
+            (spi_addr == NUM_FIR_TAPS)   ?   taps_per_filter_reg :
+            (spi_addr == FILTER_SEL)     ?   filter_select_reg :
+            (spi_addr == SRAM_CONTROL)   ?   sram_control_reg :
+            (spi_addr == SRAM_ADDR)      ?   sram_start_addr_reg :
+            (spi_addr == SRAM_TO_SPI)    ?   sram_to_spi_data :
+            (spi_addr == MPIO_CONTROL)   ?   mpio_control_reg :
+            (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
+            (spi_addr == AUX)            ?   aux_reg :
             
             8'h99;
+    end
+    else
+        spi_read_data <= spi_read_data;
+end        
 
 always @ (posedge clk) begin
     coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;

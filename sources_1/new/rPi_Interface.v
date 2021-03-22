@@ -30,7 +30,7 @@ module rPi_Interface # (
     input       spi_clk,        
     input       spi_mosi,
     output tri  spi_miso,
-    output      spi_read_stb,
+    output reg  spi_read_stb,
     output reg  spi_write_stb,
     output reg  [num_of_addr_bits-1:0]  spi_addr,
     output reg  [num_of_data_bits-1:0]  spi_write_data,
@@ -47,7 +47,7 @@ parameter num_of_shift_bits = num_of_addr_bits + num_of_data_bits + 1;  // +1 fo
 reg         spi_write;                                  // spi write / read mode
 
 reg         spi_addr_stb;
-assign      spi_read_stb = spi_addr_stb && !spi_write;
+//assign      spi_read_stb = spi_addr_stb && !spi_write;
 //assign      spi_read_stb = spi_addr_stb;                    // <<< for test
 
 reg [4:0]                   spi_bit_count = 0;
@@ -55,7 +55,7 @@ reg [2:0]                   spi_shift_clk;
 reg [num_of_shift_bits-1:0] spi_shift_in_data;
 reg [num_of_data_bits-1:0]  spi_shift_out_data;
 
-reg         spi_cs0_dly;
+reg         spi_cs0_dly, spi_read_stb_dly;
 reg         spi_miso_d;
 //reg         miso_tristate;
 
@@ -97,15 +97,14 @@ end
 
 // spi shift out register ... Master rd, Audipus output 
 always @ (posedge clk) begin
-     if (spi_cs0 && shift_out_clken) begin
+    spi_read_stb_dly <= spi_read_stb;
+    if  (spi_read_stb_dly) begin   
+        spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
+    end
+    else if (spi_cs0 && shift_out_clken) begin
         spi_miso_d <= spi_shift_out_data[num_of_data_bits-1];
-        if  (spi_bit_count == num_of_addr_bits) begin   
-            spi_shift_out_data[num_of_data_bits-1:0] <=  spi_read_data;
-         end
-        else begin            
-            spi_shift_out_data[0] <= 1'b0;
-            spi_shift_out_data[num_of_data_bits-1:1] <= spi_shift_out_data[num_of_data_bits-2:0];
-        end
+        spi_shift_out_data[0] <= 1'b0;
+        spi_shift_out_data[num_of_data_bits-1:1] <= spi_shift_out_data[num_of_data_bits-2:0];
     end
     else begin
         spi_shift_out_data <= spi_shift_out_data;
@@ -120,7 +119,7 @@ always @ (posedge clk) begin
         spi_write <= spi_write;
         miso_tristate <= 1'b1;
         spi_addr_stb <= 0;
-        spi_addr <= 0;
+//        spi_addr <= 0;
     end
     else begin
         if (shift_in_clken) begin
@@ -129,19 +128,18 @@ always @ (posedge clk) begin
                 spi_write <= !spi_mosi;
                 miso_tristate <= 1'b1;
                 spi_addr_stb <= 0;
-                spi_addr <= spi_addr;
+//                spi_addr <= spi_addr;
             end
             else if (spi_bit_count == num_of_addr_bits) begin
                 spi_addr_stb <= 1'b1;
-    //            spi_addr <= spi_shift_in_data[1:num_of_addr_bits]; //<<<<<<
-                spi_addr <= spi_shift_in_data[num_of_addr_bits-1:0];    // lob off the r/w bit7
+//                spi_addr <= spi_shift_in_data[num_of_addr_bits-1:0];    // lob off the r/w bit7
                 miso_tristate <= 1'b0;
             end
             else begin
                 spi_addr_stb <= 0;
                 miso_tristate <= miso_tristate;
                 spi_write <= spi_write;
-                spi_addr <= spi_addr;
+//                spi_addr <= spi_addr;
             end
         end
         else begin
@@ -149,8 +147,20 @@ always @ (posedge clk) begin
             miso_tristate <= miso_tristate;
             spi_write <= spi_write;
             spi_bit_count <= spi_bit_count;
-            spi_addr <= spi_addr;
+//            spi_addr <= spi_addr;
         end
+    end
+end
+
+// spi address (rd or wr) and spi_read_stb
+always @ (posedge clk) begin
+    if (spi_addr_stb) begin
+        spi_read_stb <= !spi_write;
+        spi_addr <= spi_shift_in_data[num_of_addr_bits-1:0];    // lob off the r/w bit7
+    end
+    else begin
+        spi_addr <= spi_addr;
+        spi_read_stb <= 1'b0;
     end
 end
 
