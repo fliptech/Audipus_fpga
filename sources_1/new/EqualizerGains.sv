@@ -28,16 +28,16 @@ module EqualizerGains #(
     input eq_wr,
     input [num_of_filters - 1 : 0] eq_wr_sel,    
     input [15:0] eq_gain,
-    input [47:0] l_audio_din[num_of_filters - 1 : 0],
-    input [47:0] r_audio_din[num_of_filters - 1 : 0],
-    output [23:0] l_audio_dout,
-    output [23:0] r_audio_dout
+    input [47:0] l_data_in[num_of_filters - 1 : 0],
+    input [47:0] r_data_in[num_of_filters - 1 : 0],
+    output [23:0] l_data_out,
+    output [23:0] r_data_out
 );
 
 reg [47:0] audio_out_l, audio_out_r;
 
-assign l_audio_dout[23:0] = audio_out_l[47:24];
-assign r_audio_dout[23:0] = audio_out_r[47:24];
+assign l_data_out[23:0] = audio_out_l[47:24];
+assign r_data_out[23:0] = audio_out_r[47:24];
 
 
 // Generate the number of filters for the Equalizer
@@ -46,11 +46,11 @@ assign r_audio_dout[23:0] = audio_out_r[47:24];
     always @ (posedge clk) begin
         for (i = 0; i < num_of_filters; i = i + 1) begin
            case (eq_wr_sel) 
-                i : audio_out_l <= l_audio_din[i];
+                i : audio_out_l <= l_data_in[i];
                 default : audio_out_l <= 0;      
            endcase
            case (eq_wr_sel) 
-                i : audio_out_r <= r_audio_din[i];
+                i : audio_out_r <= r_data_in[i];
                 default : audio_out_r <= 0;      
            endcase
         end

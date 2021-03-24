@@ -53,26 +53,26 @@ module AudioProcessing #(
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
-parameter AUD_EN_DLY = 2;
 
-reg [AUD_EN_DLY:0] audio_en_delay;
 wire pcmToI2S_sclk;
 wire pcmToI2S_bclk;
 wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
  
-reg         l_pcm_d_en, r_pcm_d_en;
-wire        l_data_valid, r_data_valid;
+reg         l_i2sToPcm_valid, r_i2sToPcm_valid;
+wire        l_fir_data_valid, r_fir_data_valid;
 wire [23:0] l_pcm_chnl, r_pcm_chnl;
-wire [23:0] l_aud_out, r_aud_out;
-wire [47:0] l_fir_out[num_of_filters - 1 :0], r_fir_out[num_of_filters - 1 :0];
+wire [23:0] l_mux_out, r_mux_out;
+wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 
 assign dac_rst = !reset_n;
 /////// audio control register ////////
 assign bypass =         audio_control[0];
 assign audio_enable =   audio_control[1];
-assign coef_rst =       audio_control[2];
+wire test_en =          audio_control[2];
 wire coef_sel =         audio_control[7:4];
+
+//assign audio_out = 
 
 /////////////////////////////////////////
 
@@ -95,32 +95,18 @@ end
 
 
 I2S_to_PCM_Converter i2s_to_pcm(
-    .clk        (clk),          // input
-    .reset_n    (reset_n),      // input
-    .sclk       (i2s_sclk),     // input
-    .bclk       (i2s_bclk),     // input
-    .lrclk      (i2s_lrclk),    // input
-    .s_data     (i2s_d),        // input
-    .l_data_stb (l_pcm_d_en),   // output     
-    .r_data_stb (r_pcm_d_en),   // output     
-    .l_data     (l_pcm_chnl),   // [23:0] output
-    .r_data     (r_pcm_chnl)    // [23:0] output
-);    
-    
-PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),          // input
     .reset_n        (reset_n),      // input
-    .l_data_valid   (l_pcm_d_en),     // input
-    .r_data_valid   (r_pcm_d_en),     // input
-    .l_data_en      (l_dout_en),        // output
-    .r_data_en      (r_dout_en),        // output
-    .l_data         (l_aud_out),    // [23:0] input
-    .r_data         (r_aud_out),    // [23:0] input
-    .sclk           (pcmToI2S_sclk),     // output
-    .bclk           (pcmToI2S_bclk),     // output
-    .lrclk          (pcmToI2S_lrclk),    // output
-    .s_data         (pcmToI2S_data)         // output
+    .sclk           (i2s_sclk),     // input
+    .bclk           (i2s_bclk),     // input
+    .lrclk          (i2s_lrclk),    // input
+    .i2s_data       (i2s_d),        // input
+    .l_dout_valid   (l_i2sToPcm_valid),   // output     
+    .r_dout_valid   (r_i2sToPcm_valid),   // output     
+    .l_pcm_data     (l_pcm_chnl),   // [23:0] output
+    .r_pcm_data     (r_pcm_chnl)    // [23:0] output
 );    
+    
 
 FIR_Filters filters (
     .clk                (clk),                  // input
@@ -134,12 +120,16 @@ FIR_Filters filters (
     .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
     .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
     .wr_addr_zero       (wr_addr_zero),         // output
-    // i2s signals 
-    .l_pcm_chnl         (l_pcm_chnl),           // [23:0] input
-    .r_pcm_chnl         (r_pcm_chnl),           // [23:0] input
-    // audio out    
-    .l_audio_out        (l_fir_out),            // [47:0][num_of_filters] output
-    .r_audio_out        (r_fir_out)             // [47:0][num_of_filters] output
+    // input signals
+    .l_data_en          (l_i2sToPcm_valid),     // input enable strobe 
+    .r_data_en          (r_i2sToPcm_valid),     // input enable strobe 
+    .l_data_in          (l_pcm_chnl),           // [23:0] input
+    .r_data_in          (r_pcm_chnl),           // [23:0] input
+    // output signals
+    .l_data_valid       (l_fir_data_valid),     // output valid strobe    
+    .r_data_valid       (r_fir_data_valid),     // output valid strobe    
+    .l_data_out         (l_fir_data_out),       // [47:0][num_of_filters] output
+    .r_data_out         (r_fir_data_out)        // [47:0][num_of_filters] output
 );
 
 // Audio_SRAM_Interface () ->> to do
@@ -150,19 +140,40 @@ EqualizerGains eq_gain (
     .eq_wr          (eq_wr_en),
     .eq_wr_sel      (equalizer_select),                 // input [num_of_filters - 1 : 0]     
     .eq_gain        ({eq_wr_msb_data, eq_wr_lsb_data}), // input [15:0][num_of_filters - 1 : 0] 
-    .l_audio_din    (l_fir_out),                        // input [47:0][num_of_filters - 1 : 0]
-    .r_audio_din    (r_fir_out),                        // input [47:0][num_of_filters - 1 : 0]
-    .l_audio_dout   (l_aud_out),                        // output [23:0] 
-    .r_audio_dout   (r_aud_out)                         // output [23:0] 
+    .l_data_in      (l_fir_data_out),                   // input [47:0][num_of_filters - 1 : 0]
+    .r_data_in      (r_fir_data_out),                   // input [47:0][num_of_filters - 1 : 0]
+    .l_data_out     (l_eq_out),                         // output [23:0] 
+    .r_data_out     (r_eq_out)                          // output [23:0] 
 );
 
-// setting clk delays between audio_en and X_pcm_d_en
-always @ (posedge clk) begin
-    audio_en_delay[0] <= audio_en;
-    audio_en_delay[AUD_EN_DLY:1] <= audio_en_delay[AUD_EN_DLY - 1:0];
-    l_pcm_d_en <= audio_en_delay[AUD_EN_DLY]; 
-    r_pcm_d_en <= audio_en_delay[AUD_EN_DLY]; 
-end
+
+SineWaveGenerator sinGen(
+    .clk        (clk),              // input
+    .reset_n    (reset_n),          // input
+    .run        (sin_wave_run),     // input
+    .clk_inc    (sin_wave_inc),     // input [3:0], clk increment
+    .data_valid (sin_wave_valid),   // output
+    .sin_out    (sin_wave)          // output [23:0]
+);
+    
+assign l_mux_out =  test_en ?   sin_wave : l_eq_out;
+assign r_mux_out =  test_en ?   sin_wave : r_eq_out;
+
+PCM_to_I2S_Converter pcm_to_i2s(
+    .clk            (clk),          // input
+    .reset_n        (reset_n),      // input
+    .l_data_valid   (l_i2sToPcm_valid),     // output
+    .r_data_valid   (r_i2sToPcm_valid),     // output
+    .l_data_en      (l_mux_en),        // input
+    .r_data_en      (r_mus_en),        // input
+    .l_data         (l_mux_out),    // [23:0] input
+    .r_data         (r_mux_out),    // [23:0] input
+    .sclk           (pcmToI2S_sclk),     // output
+    .bclk           (pcmToI2S_bclk),     // output
+    .lrclk          (pcmToI2S_lrclk),    // output
+    .s_data         (pcmToI2S_data)         // output
+);    
+
 
 
 endmodule

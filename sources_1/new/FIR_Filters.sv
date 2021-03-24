@@ -34,12 +34,16 @@ module FIR_Filters #(
     input [7:0]     coef_wr_msb_data,
     input [7:0]     taps_per_filter,   
     output          wr_addr_zero,
-    // i2s signals
-    input [23:0]    l_pcm_chnl,
-    input [23:0]    r_pcm_chnl,
-    // audio out
-    output [47:0]   l_audio_out[num_of_filters - 1 :0],
-    output [47:0]   r_audio_out[num_of_filters - 1 :0]
+    // input signals
+    input           l_data_en,
+    input           r_data_en,
+    input [23:0]    l_data_in,
+    input [23:0]    r_data_in,
+    // output signals
+    output          l_data_valid,
+    output          r_data_valid,
+    output [47:0]   l_data_out[num_of_filters - 1 :0],
+    output [47:0]   r_data_out[num_of_filters - 1 :0]
      
 );
 
@@ -49,6 +53,10 @@ wire [23:0] l_buf_data_out, r_buf_data_out;
 
 wire [15:0] coefficients[num_of_filters - 1 : 0];
 reg [num_of_filters - 1 : 0]   coef_wr_en;
+
+assign l_data_valid = !fir_en;
+assign r_data_valid = !fir_en;
+
 
 // Coefficient write mux
 
@@ -62,7 +70,7 @@ always @ (posedge clk) begin
     end
     else begin
 //      if (buf_rd_counter == (taps_per_filter - 1)) begin
-        if (r_data_valid) begin         // if new audio sample
+        if (r_data_en) begin         // if new audio sample
             buf_rd_counter <= 0;
             buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
@@ -84,7 +92,7 @@ end
 always @ (posedge clk) begin
     if (!reset_n || !audio_en)
         fir_en <= 1'b0;
-    else if (r_data_valid)
+    else if (r_data_en)
         fir_en <= 1'b1;
     else if (buf_rd_counter == (taps_per_filter - 1))
         fir_en <= 1'b0; 
@@ -94,12 +102,12 @@ end
 
 // circular buffer control
 
-// left         
+// left 2-port ram        
 circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_valid),    // input wire we >>> r is correct <<<; wr to buf one clk before fir_en
+  .we(r_data_en),       // input wire we >>> r is correct <<<; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [7 : 0] a (wr)
-  .d(l_pcm_chnl),       // input wire [23 : 0] d
+  .d(l_data_in),        // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(l_buf_data_out)  // output wire [23 : 0] dpo
 );
@@ -107,9 +115,9 @@ circular_fir_buffer l_circular_buffer (
 // right        
 circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_valid),    // input wire we; wr to buf one clk before fir_en
+  .we(r_data_en),       // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [7 : 0] a (wr) 
-  .d(r_pcm_chnl),       // input wire [23 : 0] d
+  .d(r_data_in),        // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(r_buf_data_out)  // output wire [23 : 0] dpo
 );
@@ -142,9 +150,9 @@ generate
             .reset_n            (reset_n),          // input
             .audio_en           (audio_en),         // input
             .data_en            (fir_en),           // input
-            .aud_data_in        (l_buf_data_out),   // [23:0] input    
+            .data_in            (l_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
-            .audio_data_out     (l_audio_out[i])    // [47:0] output      
+            .data_out           (l_data_out[i])     // [47:0] output      
         );        
         
         FIR_Tap fir_tap_r (
@@ -152,9 +160,9 @@ generate
             .reset_n            (reset_n),          // input
             .audio_en           (audio_en),         // input
             .data_en            (fir_en),           // input
-            .aud_data_in        (r_buf_data_out),   // [23:0] input    
+            .data_in            (r_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
-            .audio_data_out     (r_audio_out[i])    // [47:0] output      
+            .data_out           (r_data_out[i])     // [47:0] output      
         );        
         
     

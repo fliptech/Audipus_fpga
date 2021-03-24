@@ -23,8 +23,8 @@
 module PCM_to_I2S_Converter(
     input clk,
     input reset_n,
-    input  l_data_valid,
-    input  r_data_valid,
+    input  l_data_valid,    // not used
+    input  r_data_valid,    // not used
     input  [23:0] l_data,
     input  [23:0] r_data,
     output reg l_data_en,
