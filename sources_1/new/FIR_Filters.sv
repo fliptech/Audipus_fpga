@@ -29,7 +29,7 @@ module FIR_Filters #(
     // coefficient signals   
     input           coef_rst,
     input           coefficient_wr_en,
-    input [3:0]     coef_select,
+    input [3:0]     coef_select,        // selects which coefficient RAM to write to
     input [7:0]     coef_wr_lsb_data,
     input [7:0]     coef_wr_msb_data,
     input [7:0]     taps_per_filter,   
@@ -49,6 +49,7 @@ module FIR_Filters #(
 
 reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
 reg fir_en;
+reg [7:0] coef_wr_addr;
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
 wire [15:0] coefficients[num_of_filters - 1 : 0];
@@ -56,9 +57,28 @@ reg [num_of_filters - 1 : 0]   coef_wr_en;
 
 assign l_data_valid = !fir_en;
 assign r_data_valid = !fir_en;
+          
+assign wr_addr_zero = (coef_wr_addr == 0);
 
+// coefficient write address generator
+//      auto increments coef_wr_addr after every write
+always @ (posedge clk) begin 
+    if (!reset_n) begin
+        coef_wr_addr <= 0;
+    end
+    else begin
+        if (coefficient_wr_en) begin                            // msb wr enable
+            if (coef_wr_addr == taps_per_filter)
+                coef_wr_addr <= 0;
+            else      
+                coef_wr_addr <= coef_wr_addr + 1;
+            end
+        else 
+            coef_wr_addr <= coef_wr_addr;        
+    end        
+end
+            
 
-// Coefficient write mux
 
 
 // circular buffer control
@@ -70,12 +90,12 @@ always @ (posedge clk) begin
     end
     else begin
 //      if (buf_rd_counter == (taps_per_filter - 1)) begin
-        if (r_data_en) begin         // if new audio sample
+        if (r_data_en) begin            // if new audio sample (both left & right) strobe 
             buf_rd_counter <= 0;
             buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
         end
-        else if (fir_en) begin            
+        else if (fir_en) begin          //  if fir processing enabled 1 clk after r_data_en           
             buf_rd_counter <= buf_rd_counter + 1; 
             buf_rd_addr <= buf_rd_addr + 1;
             buf_pntr <= buf_pntr;
@@ -88,19 +108,19 @@ always @ (posedge clk) begin
     end        
 end
 
-
+// fir_en control
 always @ (posedge clk) begin
     if (!reset_n || !audio_en)
         fir_en <= 1'b0;
-    else if (r_data_en)
+    else if (r_data_en)            // if new audio sample (both left & right)
         fir_en <= 1'b1;
-    else if (buf_rd_counter == (taps_per_filter - 1))
+    else if (buf_rd_counter == (taps_per_filter - 1))   // last filter tap processed
         fir_en <= 1'b0; 
     else
         fir_en <= fir_en;
-end        
+end
 
-// circular buffer control
+        
 
 // left 2-port ram        
 circular_fir_buffer l_circular_buffer (
@@ -112,7 +132,7 @@ circular_fir_buffer l_circular_buffer (
   .dpo(l_buf_data_out)  // output wire [23 : 0] dpo
 );
 
-// right        
+// right 2-port ram        
 circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
   .we(r_data_en),       // input wire we; wr to buf one clk before fir_en
@@ -122,6 +142,8 @@ circular_fir_buffer r_circular_buffer (
   .dpo(r_buf_data_out)  // output wire [23 : 0] dpo
 );
 
+
+
 // Generate the number of filters for the Equalizer
 genvar i;
 
@@ -129,6 +151,7 @@ generate
     for (i = 0; i < num_of_filters; i = i + 1) 
     begin: fir_instantiate
 
+/*
         FIR_coefficients fir_coef (
             .clk                (clk),              // input
             .reset_n            (reset_n),          // input
@@ -142,9 +165,19 @@ generate
             .wr_addr_zero       (wr_addr_zero),     // output
             .coefficients       (coefficients[i])   // [15:0] output
         );    
-        
-        
-            
+*/       
+  
+ 
+        coef_ram FIR_coef_ram (
+            .clk(clk),                                  // input wire clk
+            .we(coef_wr_en[i]),                         // input wire we
+            .a(coef_wr_addr),                           // input wire [7 : 0] a
+            .d({coef_wr_msb_data, coef_wr_lsb_data}),   // input wire [15 : 0] d
+            .dpra(coef_rd_addr),                        // input wire [7 : 0] dpra
+            .dpo(coefficients[i])                       // output wire [15 : 0] dpo
+        );           
+                
+                    
         FIR_Tap fir_tap_l (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
@@ -166,6 +199,7 @@ generate
         );        
         
     
+        // Coefficient write mux
         always @ (posedge clk) begin    
             coef_wr_en[i] <= (coef_select == i) ?  coefficient_wr_en : 1'b0; 
         end

@@ -43,6 +43,7 @@ module FIR_coefficients #(
     
             
 // coefficient write address generator
+//      increments wr_addr after every write
 always @ (posedge clk) begin 
     if (!reset_n) begin
         coef_wr_addr <= 0;

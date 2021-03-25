@@ -61,7 +61,7 @@ wire pcmToI2S_data;
  
 reg         l_i2sToPcm_valid, r_i2sToPcm_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
-wire [23:0] l_pcm_chnl, r_pcm_chnl;
+wire [23:0] l_pcm_data, r_pcm_chnl;
 wire [23:0] l_mux_out, r_mux_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 
@@ -95,16 +95,16 @@ end
 
 
 I2S_to_PCM_Converter i2s_to_pcm(
-    .clk            (clk),          // input
-    .reset_n        (reset_n),      // input
-    .sclk           (i2s_sclk),     // input
-    .bclk           (i2s_bclk),     // input
-    .lrclk          (i2s_lrclk),    // input
-    .i2s_data       (i2s_d),        // input
-    .l_dout_valid   (l_i2sToPcm_valid),   // output     
-    .r_dout_valid   (r_i2sToPcm_valid),   // output     
-    .l_pcm_data     (l_pcm_chnl),   // [23:0] output
-    .r_pcm_data     (r_pcm_chnl)    // [23:0] output
+    .clk            (clk),              // input
+    .reset_n        (reset_n),          // input
+    .sclk           (i2s_sclk),         // input
+    .bclk           (i2s_bclk),         // input
+    .lrclk          (i2s_lrclk),        // input
+    .i2s_data       (i2s_d),            // input
+    .l_dout_valid   (l_i2sToPcm_valid), // output     
+    .r_dout_valid   (r_i2sToPcm_valid), // output     
+    .l_pcm_data     (l_pcm_data),       // [23:0] output
+    .r_pcm_data     (r_pcm_data)        // [23:0] output
 );    
     
 
@@ -123,11 +123,11 @@ FIR_Filters filters (
     // input signals
     .l_data_en          (l_i2sToPcm_valid),     // input enable strobe 
     .r_data_en          (r_i2sToPcm_valid),     // input enable strobe 
-    .l_data_in          (l_pcm_chnl),           // [23:0] input
-    .r_data_in          (r_pcm_chnl),           // [23:0] input
+    .l_data_in          (l_pcm_data),           // [23:0] input
+    .r_data_in          (r_pcm_data),           // [23:0] input
     // output signals
-    .l_data_valid       (l_fir_data_valid),     // output valid strobe    
-    .r_data_valid       (r_fir_data_valid),     // output valid strobe    
+    .l_data_valid       (l_fir_data_valid),     // output valid (after a fir process till next sample)    
+    .r_data_valid       (r_fir_data_valid),     // output valid (after a fir process till next sample)    
     .l_data_out         (l_fir_data_out),       // [47:0][num_of_filters] output
     .r_data_out         (r_fir_data_out)        // [47:0][num_of_filters] output
 );
@@ -160,18 +160,18 @@ assign l_mux_out =  test_en ?   sin_wave : l_eq_out;
 assign r_mux_out =  test_en ?   sin_wave : r_eq_out;
 
 PCM_to_I2S_Converter pcm_to_i2s(
-    .clk            (clk),          // input
-    .reset_n        (reset_n),      // input
-    .l_data_valid   (l_i2sToPcm_valid),     // output
-    .r_data_valid   (r_i2sToPcm_valid),     // output
-    .l_data_en      (l_mux_en),        // input
-    .r_data_en      (r_mus_en),        // input
-    .l_data         (l_mux_out),    // [23:0] input
-    .r_data         (r_mux_out),    // [23:0] input
-    .sclk           (pcmToI2S_sclk),     // output
-    .bclk           (pcmToI2S_bclk),     // output
-    .lrclk          (pcmToI2S_lrclk),    // output
-    .s_data         (pcmToI2S_data)         // output
+    .clk            (clk),              // input
+    .reset_n        (reset_n),          // input
+    .l_data_valid   (l_i2sToPcm_valid), // output
+    .r_data_valid   (r_i2sToPcm_valid), // output
+    .l_data_en      (l_mux_en),         // input
+    .r_data_en      (r_mus_en),         // input
+    .l_data         (l_mux_out),        // [23:0] input
+    .r_data         (r_mux_out),        // [23:0] input
+    .sclk           (pcmToI2S_sclk),    // output
+    .bclk           (pcmToI2S_bclk),    // output
+    .lrclk          (pcmToI2S_lrclk),   // output
+    .s_data         (pcmToI2S_data)     // [23:0] output
 );    
 
 
