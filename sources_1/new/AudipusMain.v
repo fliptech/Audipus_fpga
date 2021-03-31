@@ -82,6 +82,7 @@ parameter num_of_filters = 4;
 // audio connections
     wire        coef_wr_en;
     wire        eq_wr_en;
+    wire [7:0] audio_status_reg;
     wire [7:0] audio_control_reg;
     wire [7:0] filter_select_reg;
     wire [7:0] number_of_taps_reg;
@@ -160,7 +161,8 @@ parameter num_of_filters = 4;
         .coef_wr_stb            (coef_wr_en),
         .eq_wr_stb              (eq_wr_en),
 //  input registers, input [7:0]
-        .status                 (status),
+        .status                 (status_reg),
+        .audio_status           (audio_status_reg),
         .sram_to_spi_data       (sram_to_spi_data),           
         .mpio_to_spi_data       (mpio_to_spi_data),           
 //  output registers, output [7:0]
@@ -187,7 +189,7 @@ parameter num_of_filters = 4;
         .miso_tristate          (miso_tristate), 
         .spi_addr               (spi_addr)      
     );
-    
+/*    
     sram_Interface sQi_interface (        
         .clk            (clk),
         .reset_n        (reset_n),
@@ -198,7 +200,7 @@ parameter num_of_filters = 4;
         .sram_rd_reg    (sram_to_spi_reg),      // output [15:0]
         .sram_wr_reg    (spi_to_sram_reg)       // input [15:0]
     );
-    
+*/    
     
     AudioProcessing aud_proc (
         .clk                (clk),
@@ -215,9 +217,9 @@ parameter num_of_filters = 4;
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),
         // audio SRAM interface signals
-        .sram_spi_cs        (spi_cs),
-        .sram_spi_clk       (spi_clk),
-        .sram_spi_sio       (spi_sio),       // inout [3:0]       
+//        .sram_spi_cs        (spi_cs),
+//        .sram_spi_clk       (spi_clk),
+//        .sram_spi_sio       (spi_sio),       // inout [3:0]       
         // cpu registers
         .coef_wr_en         (coef_wr_en),
         .eq_wr_en           (eq_wr_en),
@@ -227,7 +229,8 @@ parameter num_of_filters = 4;
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
         .eq_wr_lsb_data     (eq_gain_lsb),
-        .eq_wr_msb_data     (eq_gain_msb)
+        .eq_wr_msb_data     (eq_gain_msb),
+        .audio_status       (audio_status_reg)
     );
     
 

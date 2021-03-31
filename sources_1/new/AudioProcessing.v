@@ -37,19 +37,20 @@ module AudioProcessing #(
     output reg dac_lrclk,
     output reg dac_data,
     // audio SRAM interface signals
-    output reg sram_spi_cs,
-    output reg sram_spi_clk,
-    inout [3:0] sram_spi_sio,
+//    output reg sram_spi_cs,
+//    output reg sram_spi_clk,
+//    inout [3:0] sram_spi_sio,
     // cpu registers 
     input       coef_wr_en,
     input       eq_wr_en,
     input [7:0] audio_control,      // cpu reg
-    input [7:0] equalizer_select, 
+    input [7:0] equalizer_select,   // cpu reg 
     input [7:0] taps_per_filter,    // cpu reg
     input [7:0] coef_wr_lsb_data,   // cpu reg
     input [7:0] coef_wr_msb_data,   // cpu reg
     input [7:0] eq_wr_lsb_data,     // cpu reg
-    input [7:0] eq_wr_msb_data      // cpu reg
+    input [7:0] eq_wr_msb_data,     // cpu reg
+    output [7:0] audio_status       // cpu reg
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
@@ -58,6 +59,7 @@ wire pcmToI2S_sclk;
 wire pcmToI2S_bclk;
 wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
+wire l_eq_valid, r_eq_valid;
  
 reg         l_i2sToPcm_valid, r_i2sToPcm_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
@@ -65,12 +67,18 @@ wire [23:0] l_pcm_data, r_pcm_chnl;
 wire [23:0] l_mux_out, r_mux_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 
+
 assign dac_rst = !reset_n;
 /////// audio control register ////////
 assign bypass =         audio_control[0];
-assign audio_enable =   audio_control[1];
-wire test_en =          audio_control[2];
+assign eq_bypass =      audio_control[1];
+assign audio_enable =   audio_control[2];
+wire test_en =          audio_control[3];
 wire coef_sel =         audio_control[7:4];
+
+// audio_status register
+assign audio_status[0]  = fir_wr_addr_zero;
+assign audio_status[1]  = eq_wr_addr_zero;
 
 //assign audio_out = 
 
@@ -119,7 +127,7 @@ FIR_Filters filters (
     .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg
     .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
     .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
-    .wr_addr_zero       (wr_addr_zero),         // output
+    .wr_addr_zero       (fir_wr_addr_zero),     // output
     // input signals
     .l_data_en          (l_i2sToPcm_valid),     // input enable strobe 
     .r_data_en          (r_i2sToPcm_valid),     // input enable strobe 
@@ -137,11 +145,14 @@ FIR_Filters filters (
 EqualizerGains eq_gain (
     .clk            (clk),
     .reset_n        (reset_n),
+    .bypass         (eq_bypass),
     .eq_wr          (eq_wr_en),
     .eq_wr_sel      (equalizer_select),                 // input [num_of_filters - 1 : 0]     
-    .eq_gain        ({eq_wr_msb_data, eq_wr_lsb_data}), // input [15:0][num_of_filters - 1 : 0] 
+    .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
+    .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
     .l_data_in      (l_fir_data_out),                   // input [47:0][num_of_filters - 1 : 0]
     .r_data_in      (r_fir_data_out),                   // input [47:0][num_of_filters - 1 : 0]
+    .wr_addr_zero   (eq_wr_addr_zero),                  // output
     .l_data_out     (l_eq_out),                         // output [23:0] 
     .r_data_out     (r_eq_out)                          // output [23:0] 
 );
@@ -149,15 +160,16 @@ EqualizerGains eq_gain (
 
 SineWaveGenerator sinGen(
     .clk        (clk),              // input
-    .reset_n    (reset_n),          // input
     .run        (sin_wave_run),     // input
-    .clk_inc    (sin_wave_inc),     // input [3:0], clk increment
-    .data_valid (sin_wave_valid),   // output
+    .freq_sel   (sin_wave_inc),     // input [3:0], selects freq out from a stream
+    .data_valid (sin_wave_valid),   // output strobe
     .sin_out    (sin_wave)          // output [23:0]
 );
     
 assign l_mux_out =  test_en ?   sin_wave : l_eq_out;
 assign r_mux_out =  test_en ?   sin_wave : r_eq_out;
+assign l_mux_en = test_en ?  sin_wave_valid : l_eq_valid;
+assign r_mux_en = test_en ?  sin_wave_valid : r_eq_valid;
 
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
@@ -165,7 +177,7 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .l_data_valid   (l_i2sToPcm_valid), // output
     .r_data_valid   (r_i2sToPcm_valid), // output
     .l_data_en      (l_mux_en),         // input
-    .r_data_en      (r_mus_en),         // input
+    .r_data_en      (r_mux_en),         // input
     .l_data         (l_mux_out),        // [23:0] input
     .r_data         (r_mux_out),        // [23:0] input
     .sclk           (pcmToI2S_sclk),    // output
