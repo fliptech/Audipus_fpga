@@ -34,6 +34,8 @@ reg [3:0] sin_count;
 reg [BCLK_DIV-1:0] clken_count;
 reg       clken; 
 
+wire [23:0] sin_data_out;
+wire [15:0] m_axis_phase_tdata;
     
 sinWaveGen test_sin (
   .aclk                 (clk),                  // input wire aclk
@@ -73,7 +75,7 @@ always @ (posedge clk) begin
         clken_count <= 0;
         clken <= 1'b0;
     end
-    else if (sin_count == freq_sel) begin
+    else if (clken_count == freq_sel) begin
         clken_count <= clken_count + 1;;
         clken <= 1'b1;
     end

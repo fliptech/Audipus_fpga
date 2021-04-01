@@ -22,9 +22,9 @@
 
 module PCM9211_mpio_Interface(
     input [1:0]     mpio_control,
-    input           mpio_cs,
-    input           mpio_rd,
-    input           mpio_wr,
+//    input           mpio_cs,
+//    input           mpio_rd,
+//    input           mpio_wr,
     inout [3:0]     mpioa,
     inout [3:0]     mpiob,
     inout [3:0]     mpioc,

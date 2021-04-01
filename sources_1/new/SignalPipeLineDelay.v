@@ -24,7 +24,6 @@ module SignalPipeLineDelay #(
     parameter SIG_DLY = 3
 ) (    
     input clk,
-    input reset_n,
     input signal_in,
     output signal_out
 );

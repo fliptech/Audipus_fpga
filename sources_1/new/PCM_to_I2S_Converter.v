@@ -7,10 +7,10 @@ module PCM_to_I2S_Converter(
     output reg      r_data_en,
     input [23:0]    l_data,
     input [23:0]    r_data,
-    output          sclk,
+//    output          sclk,  // use i2s_sclk from ClockGeneration
     output reg      bclk,
     output reg      lrclk,
-    output reg [23:0] s_data
+    output reg      s_data
 );    
 
 reg         bclk_en, l_shift_en, r_shift_en;
@@ -50,6 +50,7 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
         endcase               
     end
 end
+//assign dac_sclk = fir_bypass ? i2s_sclk : clkGen_i2s_clk;
 
 // lrclk, l_data_en, r_data_en generation ** lrclk = bclk/64
 always @ (posedge clk) begin    // clk freq = 49.152MHz

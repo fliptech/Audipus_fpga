@@ -27,7 +27,7 @@ module FIR_Filters #(
     input           reset_n,
     input           audio_en,
     // coefficient signals   
-    input           coef_rst,
+//    input           coef_rst,
     input           coefficient_wr_en,
     input [3:0]     coef_select,        // selects which coefficient RAM to write to
     input [7:0]     coef_wr_lsb_data,
@@ -48,15 +48,16 @@ module FIR_Filters #(
 );
 
 reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
-reg fir_en;
+reg fir_en, fir_valid_stb;
 reg [7:0] coef_wr_addr;
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
 wire [15:0] coefficients[num_of_filters - 1 : 0];
 reg [num_of_filters - 1 : 0]   coef_wr_en;
 
-assign l_data_valid = !fir_en;
-assign r_data_valid = !fir_en;
+wire fir_data_valid;
+assign l_data_valid = fir_data_valid;
+assign r_data_valid = fir_data_valid;
           
 assign wr_addr_zero = (coef_wr_addr == 0);
 
@@ -110,16 +111,32 @@ end
 
 // fir_en control
 always @ (posedge clk) begin
-    if (!reset_n || !audio_en)
+    if (!reset_n || !audio_en) begin
         fir_en <= 1'b0;
-    else if (r_data_en)            // if new audio sample (both left & right)
+        fir_valid_stb <= 1'b0;
+    end
+    else if (r_data_en)  begin          // if new audio sample (both left & right)
         fir_en <= 1'b1;
-    else if (buf_rd_counter == (taps_per_filter - 1))   // last filter tap processed
-        fir_en <= 1'b0; 
-    else
+        fir_valid_stb <= 1'b0;
+    end
+    else if (buf_rd_counter == (taps_per_filter - 1)) begin   // last filter tap processed
+        fir_en <= 1'b0;
+        fir_valid_stb <= 1'b1;
+    end
+    else begin
         fir_en <= fir_en;
+        fir_valid_stb <= 1'b0;
+    end
 end
 
+ 
+defparam fir_valid_delay.SIG_DLY = 4; 
+
+SignalPipeLineDelay fir_valid_delay (
+    .clk        (clk),
+    .signal_in  (fir_valid_stb),
+    .signal_out (fir_data_valid)
+);
         
 
 // left 2-port ram        
@@ -169,12 +186,12 @@ generate
   
  
         coef_ram FIR_coef_ram (
-            .clk(clk),                                  // input wire clk
-            .we(coef_wr_en[i]),                         // input wire we
-            .a(coef_wr_addr),                           // input wire [7 : 0] a
-            .d({coef_wr_msb_data, coef_wr_lsb_data}),   // input wire [15 : 0] d
-            .dpra(coef_rd_addr),                        // input wire [7 : 0] dpra
-            .dpo(coefficients[i])                       // output wire [15 : 0] dpo
+            .clk    (clk),                                      // input wire clk
+            .we     (coef_wr_en[i]),                            // input wire we
+            .a      (coef_wr_addr),                             // input wire [7 : 0] a
+            .d      ({coef_wr_msb_data, coef_wr_lsb_data}),     // input wire [15 : 0] d
+            .dpra   (buf_rd_counter),                           // input wire [7 : 0] dpra
+            .dpo    (coefficients[i])                           // output wire [15 : 0] dpo
         );           
                 
                     

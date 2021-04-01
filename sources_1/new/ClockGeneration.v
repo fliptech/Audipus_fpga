@@ -39,7 +39,7 @@ BUFG BUFG_inst(
 main_clk_gen instance_name (
     // Status and control signals
     .resetn         (reset_n), // input resetn
-    .locked         (pll_locked),       // output locked
+    .locked         (locked),       // output locked
    // Clock in ports
     .clk_in1        (main_clk),      // input clk_in1
     // Clock out ports

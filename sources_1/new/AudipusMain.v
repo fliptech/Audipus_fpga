@@ -43,7 +43,7 @@ parameter num_of_equalizers = 8;
         inout [3:0] pcm9211_mpioA,
         inout [3:0] pcm9211_mpioB,
         inout [3:0] pcm9211_mpioC,
-        output pcm9211_i2s_clk_out,
+        output i2s_clk_out,
         input main_clk,
         inout security,
         output dac_rst,
@@ -66,7 +66,7 @@ parameter num_of_equalizers = 8;
         
         output [17:0]   test,
         inout [9:0]     aux,
-        output [3:0]    step_drv,
+//        output [3:0]    step_drv,
         output [3:0]    led,
         output          spdif_out
     );
@@ -80,8 +80,8 @@ parameter num_of_filters = 4;
 //   CONNECTIONS  //
 ////////////////////
 // audio connections
-    wire        coef_wr_en;
-    wire        eq_wr_en;
+    wire       coef_wr_en;
+    wire       eq_wr_en;
     wire [7:0] audio_status_reg;
     wire [7:0] audio_control_reg;
     wire [7:0] filter_select_reg;
@@ -115,12 +115,15 @@ parameter num_of_filters = 4;
 //    wire [2:0]       spi_shift_clk;
     wire            shift_in_clken, shift_out_clken;
     wire            miso_tristate;
+    wire            clkGen_i2s_clk;
     wire [6:0]      spi_addr;
+    
+    wire [7:0]      sram_start_addr;
     
 
 // ASSIGNMENTS
 
-    assign pcm9211_clk = pcm9211_i2s_clk_out;       // << check
+   
 
 //  spi devices cs mux
 //  rPix[23:22] select the spi_cs_n for each device
@@ -129,7 +132,7 @@ parameter num_of_filters = 4;
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
 
     //audio control register
-    assign spdif_out = audio_control_reg[7];        // temp << check
+    assign spdif_out = 1'b0;        // temp << check
 
 
     
@@ -137,7 +140,7 @@ parameter num_of_filters = 4;
         .main_clk   (main_clk),
         .reset_n    (reset_n),
         .sys_clk    (clk),
-        .i2s_sclk    (pcm9211_i2s_clk_out),
+        .i2s_sclk   (clkGen_i2s_clk),
         .locked     (sys_clk_locked)
     );
     
@@ -210,6 +213,7 @@ parameter num_of_filters = 4;
         .i2s_bclk           (pcm9211_i2s_bclk),
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
+        .clkGen_i2s_clk     (clkGen_i2s_clk),
         //output i2s
         .dac_rst            (dac_rst),
         .dac_sclk           (dac_sclk),
@@ -224,7 +228,7 @@ parameter num_of_filters = 4;
         .coef_wr_en         (coef_wr_en),
         .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
-        .equalizer_select   (filter_select_reg),
+        .filter_select      (filter_select_reg),
         .taps_per_filter    (number_of_taps_reg),
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),

@@ -17,7 +17,7 @@ set_property PACKAGE_PIN J18 [get_ports {pcm9211_i2s_sclk}]
 set_property PACKAGE_PIN L18 [get_ports {pcm9211_i2s_bclk}]
 set_property PACKAGE_PIN K18 [get_ports {pcm9211_i2s_lrclk}]
 set_property PACKAGE_PIN N18 [get_ports {pcm9211_i2s_d}]
-set_property PACKAGE_PIN P17 [get_ports {pcm9211_i2s_clk_out}]
+set_property PACKAGE_PIN P17 [get_ports {i2s_clk_out}]
 #
 set_property PACKAGE_PIN N19 [get_ports {pcm9211_mpio0}]
 set_property PACKAGE_PIN P19 [get_ports {pcm9211_mpio1}]
