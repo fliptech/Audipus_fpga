@@ -125,7 +125,7 @@ set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_i2s_sclk}]
 set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_i2s_bclk}]
 set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_i2s_lrclk}]
 set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_i2s_d}]
-set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_i2s_clk_out}]
+set_property IOSTANDARD LVCMOS33 [get_ports {i2s_clk_out}]
 #
 set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_mpio0}]
 set_property IOSTANDARD LVCMOS33 [get_ports {pcm9211_mpio1}]

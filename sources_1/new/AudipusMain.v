@@ -66,7 +66,7 @@ parameter num_of_equalizers = 8;
         
         output [17:0]   test,
         inout [9:0]     aux,
-//        output [3:0]    step_drv,
+        output [3:0]    step_drv,
         output [3:0]    led,
         output          spdif_out
     );
@@ -99,6 +99,7 @@ parameter num_of_filters = 4;
     
     wire [7:0] eq_gain_lsb, eq_gain_msb;
     
+    assign pcm9211_clk = i2s_clk_out;    
     
 
         
@@ -247,13 +248,15 @@ parameter num_of_filters = 4;
         .mpio_wr_reg    (spi_to_mpio_data)      // input [7:0]
     );
         
-/*    StepperMotorDrive step_drive (
+    StepperMotorDrive step_drive (
         .clk            (clk),
-        .motor_interval (motor_interval),   // input [15:0]
-        .step_drv       (step_drv)          // output [3:0]
+        .motor_en       (sram_control_reg[0]),              // input
+        .reverse        (sram_control_reg[1]),              // input
+        .motor_interval ({2'b00, sram_control_reg[7:2]}),   // input [7:0]
+        .step_drv       (step_drv)                          // output [3:0]
         
     );
-*/  
+  
 
 // Test Assignments
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};

@@ -130,7 +130,7 @@ always @ (posedge clk) begin
 end
 
  
-defparam fir_valid_delay.SIG_DLY = 4; 
+defparam fir_valid_delay.SIG_DLY = 4; // Delay of 4 clks
 
 SignalPipeLineDelay fir_valid_delay (
     .clk        (clk),

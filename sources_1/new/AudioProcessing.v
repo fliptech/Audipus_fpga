@@ -63,7 +63,8 @@ wire pcmToI2S_data;
 wire l_eq_valid, r_eq_valid;
 wire fir_wr_addr_zero, eq_wr_addr_zero;
  
-reg         l_i2sToPcm_valid, r_i2sToPcm_valid;
+wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
+wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
@@ -83,8 +84,7 @@ assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
 
-/////////////////////////////////////////
-
+//////////////////// FIR Bypass Mux ////////////////////////////
 assign dac_sclk = fir_bypass ? i2s_sclk : clkGen_i2s_clk;
 
 always @ (posedge clk) begin
@@ -101,6 +101,7 @@ always @ (posedge clk) begin
         dac_data <= pcmToI2S_data;
     end
 end
+//////////////////////////////////////////////////////////////
 
 
 I2S_to_PCM_Converter i2s_to_pcm(
@@ -110,8 +111,8 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .bclk           (i2s_bclk),         // input
     .lrclk          (i2s_lrclk),        // input
     .i2s_data       (i2s_d),            // input
-    .l_dout_valid   (l_i2sToPcm_valid), // output     
-    .r_dout_valid   (r_i2sToPcm_valid), // output     
+    .l_dout_valid   (l_i2sToPcm_valid), // output strobe     
+    .r_dout_valid   (r_i2sToPcm_valid), // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
     .r_pcm_data     (r_pcm_data)        // [23:0] output
 );    
@@ -134,8 +135,8 @@ FIR_Filters filters (
     .l_data_in          (l_pcm_data),           // [23:0] input
     .r_data_in          (r_pcm_data),           // [23:0] input
     // output signals
-    .l_data_valid       (l_fir_data_valid),     // output valid (after a fir process till next sample)    
-    .r_data_valid       (r_fir_data_valid),     // output valid (after a fir process till next sample)    
+    .l_data_valid       (l_fir_data_valid),     // output valid strobe
+    .r_data_valid       (r_fir_data_valid),     // output valid strobe
     .l_data_out         (l_fir_data_out),       // [47:0][num_of_filters] output
     .r_data_out         (r_fir_data_out)        // [47:0][num_of_filters] output
 );
@@ -175,18 +176,23 @@ SineWaveGenerator sinGen(
     .sin_out    (sin_wave)              // output [23:0]
 );
     
+
+//////////////////// sin wave test Mux ////////////////////////////
+
 assign l_mux_out =  sin_test_en ?   sin_wave : l_eq_out;
 assign r_mux_out =  sin_test_en ?   sin_wave : r_eq_out;
 wire l_mux_en = sin_test_en ?  sin_wave_valid : l_eq_valid;
 wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
+//////////////////////////////////////////////////////////////
+
 
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
     .reset_n        (reset_n),          // input
-    .l_data_valid   (l_i2sToPcm_valid), // output
-    .r_data_valid   (r_i2sToPcm_valid), // output
     .l_data_en      (l_mux_en),         // input
     .r_data_en      (r_mux_en),         // input
+    .l_data_valid   (l_PcmToI2S_valid), // output
+    .r_data_valid   (r_PcmToI2S_valid), // output
     .l_data         (l_mux_out),        // [23:0] input
     .r_data         (r_mux_out),        // [23:0] input
     .bclk           (pcmToI2S_bclk),    // output

@@ -1,10 +1,10 @@
 module PCM_to_I2S_Converter(
     input           clk,
     input           reset_n,
-    input          l_data_valid,
-    input          r_data_valid,
-    output reg      l_data_en,
-    output reg      r_data_en,
+    input           l_data_en,
+    input           r_data_en,
+    output reg      l_data_valid,
+    output reg      r_data_valid,
     input [23:0]    l_data,
     input [23:0]    r_data,
 //    output          sclk,  // use i2s_sclk from ClockGeneration
@@ -13,7 +13,7 @@ module PCM_to_I2S_Converter(
     output reg      s_data
 );    
 
-reg         bclk_en, l_shift_en, r_shift_en;
+reg         bclk_en, l_shift_en, r_shift_en, i2s_en;
 //reg [2:0]   bclk_shift, lrclk_shift;
 reg [23:0]  l_data_reg, r_data_reg;
 //reg [15:0]  i2s_seq_cnt;
@@ -33,7 +33,6 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
         case (i2s_seq_cnt)
             3  : begin
                 bclk <= 1'b0;
-                bclk_en <= 1'b1;
                 bclk_en <= 1'b1;            // on falling edge of bclk
                 i2s_seq_cnt <= i2s_seq_cnt + 1;
             end
@@ -52,7 +51,7 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
 end
 //assign dac_sclk = fir_bypass ? i2s_sclk : clkGen_i2s_clk;
 
-// lrclk, l_data_en, r_data_en generation ** lrclk = bclk/64
+// lrclk, l_data_valid, r_data_valid generation ** lrclk = bclk/64
 always @ (posedge clk) begin    // clk freq = 49.152MHz
     if (reset_n) begin
         lr_cnt <= 0;    
@@ -61,20 +60,20 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
         case (lr_cnt)
             15  : begin
                 lrclk <= 1'b1;
-                l_data_en <= 1'b1;
-                r_data_en <= 1'b0;
+                l_data_valid <= 1'b1;
+                r_data_valid <= 1'b0;
                 lr_cnt <= lr_cnt + 1;
            end
             31  : begin
                 lrclk <= 1'b0;
-                r_data_en <= 1'b1;
-                l_data_en <= 1'b0;
+                r_data_valid <= 1'b1;
+                l_data_valid <= 1'b0;
                 lr_cnt = 0;
             end
             default: begin
                 lrclk <= lrclk;
-                l_data_en <= 1'b0;
-                r_data_en <= 1'b0;
+                l_data_valid <= 1'b0;
+                r_data_valid <= 1'b0;
                 lr_cnt <= lr_cnt + 1;
             end
         endcase
@@ -85,14 +84,24 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
     end
 end
 
-
+always @ (posedge clk) begin    // clk freq = 49.152MHz
+    if (reset_n) 
+        i2s_en <= 1'b0;
+    else if (r_data_en) 
+        i2s_en <= 1'b1;
+    else if (lr_cnt == 5'h1f)
+        i2s_en <= 1'b0;
+    else
+        i2s_en <= i2s_en;
+end
+    
 
 // I2S shift out using Std Data Format
 always @ (posedge clk) begin
     if (bclk_en) begin
-        if (l_data_en)
+        if (l_data_valid)
             l_data_reg <= l_data;
-        else if (r_data_en)
+        else if (r_data_valid)
             r_data_reg <= r_data;
         else if (!lrclk) begin
             s_data <= l_data_reg[23];

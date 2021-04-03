@@ -50,7 +50,7 @@ sinWaveGen test_sin (
   .event_pinc_invalid   (event_pinc_invalid)    // output wire event_pinc_invalid
 );
 
-
+// sin_data_out provides a multiple output stream of different defined frequencies, in a defined order
 // sin_count[3:0] => 4125Hz, 2250Hz, 562Hz, 93Hz :: order 0=>3
 always @ (posedge clk) begin
     if (!sin_data_valid || !run) begin
