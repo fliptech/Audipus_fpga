@@ -216,7 +216,7 @@ parameter num_of_filters = 4;
         .i2s_d              (pcm9211_i2s_d),
         .clkGen_i2s_clk     (clkGen_i2s_clk),
         //output i2s
-        .dac_rst            (dac_rst),
+        .audio_enable       (dac_rst),
         .dac_sclk           (dac_sclk),
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
@@ -259,6 +259,8 @@ parameter num_of_filters = 4;
   
 
 // Test Assignments
+
+/*  SPI Test
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
     assign test[4] = spi_rd_stb;
     assign test[5] = spi_wr_stb;
@@ -267,7 +269,9 @@ parameter num_of_filters = 4;
     assign test[8] =  miso_tristate;
     assign test[15:9] = spi_addr;
 //    assign test[15:13] = ;
-    assign test[17] = clk;
-      
+*/
+// I2S Test
+    assign test[3:0] = {dac_sclk, dac_bclk, dac_lrclk, dac_rst};
+    assign test[17] = clk;      
   
 endmodule

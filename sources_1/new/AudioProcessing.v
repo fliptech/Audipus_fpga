@@ -32,7 +32,7 @@ module AudioProcessing #(
     input i2s_d,
     input clkGen_i2s_clk,
     // dac interface, i2s out
-    output dac_rst,
+    output audio_enable,
     output     dac_sclk,
     output reg dac_bclk,
     output reg dac_lrclk,
@@ -64,7 +64,7 @@ wire l_eq_valid, r_eq_valid;
 wire fir_wr_addr_zero, eq_wr_addr_zero;
  
 wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
-wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
+//wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
@@ -77,7 +77,7 @@ wire fir_bypass =       audio_control[0];
 wire eq_bypass =        audio_control[1];
 wire audio_enable =     audio_control[2];
 wire sin_test_en =      audio_control[3];
-assign dac_rst =        audio_control[4];
+//assign dac_rst =        audio_control[4];
 
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
@@ -188,11 +188,9 @@ wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
 
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
-    .reset_n        (reset_n),          // input
+    .audio_en       (audio_enable),     // input
     .l_data_en      (l_mux_en),         // input
     .r_data_en      (r_mux_en),         // input
-    .l_data_valid   (l_PcmToI2S_valid), // output
-    .r_data_valid   (r_PcmToI2S_valid), // output
     .l_data         (l_mux_out),        // [23:0] input
     .r_data         (r_mux_out),        // [23:0] input
     .bclk           (pcmToI2S_bclk),    // output
