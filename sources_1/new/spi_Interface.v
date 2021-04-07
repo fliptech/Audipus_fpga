@@ -83,8 +83,8 @@ wire [num_of_data_bits-1:0]     spi_write_data;
 	parameter FILTER_SEL       = 7'h03;    // Filter to be accessed, max. number = parameter num_of_filters
 	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
 	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
-	parameter AUX              = 7'h07;    // aux Reg (tbd) test Reg
-	parameter SRAM_CONTROL     = 7'h06;    // page for sram
+	parameter AUX              = 7'h06;    // aux Reg (tbd) test Reg
+	parameter SRAM_CONTROL     = 7'h07;    // page for sram
 	parameter SRAM_ADDR        = 7'h08;    // selects sram start address for auto-increment
 	parameter SPI_TO_SRAM      = 7'h09;    // write, sram->spi, for a given page, addr is auto-incremented
 	parameter SRAM_TO_SPI      = 7'h0a;    // read, spi->sram, for a given page, addr is auto-incremented

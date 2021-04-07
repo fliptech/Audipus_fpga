@@ -77,7 +77,8 @@ wire fir_bypass =       audio_control[0];
 wire eq_bypass =        audio_control[1];
 wire audio_enable =     audio_control[2];
 wire sin_test_en =      audio_control[3];
-//assign dac_rst =        audio_control[4];
+wire output_test_en =   audio_control[4];
+//assign dac_rst =        audio_control[];
 
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
@@ -189,6 +190,7 @@ wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
     .audio_en       (audio_enable),     // input
+    .audio_test     (output_test_en),   // input
     .l_data_en      (l_mux_en),         // input
     .r_data_en      (r_mux_en),         // input
     .l_data         (l_mux_out),        // [23:0] input

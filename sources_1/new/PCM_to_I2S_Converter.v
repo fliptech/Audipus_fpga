@@ -1,6 +1,7 @@
 module PCM_to_I2S_Converter(
     input           clk,
     input           audio_en,
+    input           audio_test,
     input           l_data_en,
     input           r_data_en,
     input [23:0]    l_data,
@@ -140,9 +141,15 @@ always @ (posedge clk) begin
         end
         else if (lrclk && !lrclk_dly) begin
             if (r_fifo_empty)
-                shift_data_reg <= 0;
+                if (audio_test)
+                    shift_data_reg <= 24'h555999;
+                else
+                    shift_data_reg <= 0;
             else
-                shift_data_reg <= r_fifo_dout;
+                if (audio_test)
+                    shift_data_reg <= 24'haaa666;
+                else
+                    shift_data_reg <= r_fifo_dout;
         end
         else begin // shift right, lsb first
 //            s_data <= shift_data_reg[0];
