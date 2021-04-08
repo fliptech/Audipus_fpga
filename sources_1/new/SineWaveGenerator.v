@@ -21,7 +21,7 @@
 
 
 module SineWaveGenerator # (
-    parameter BCLK_DIV = 8
+    parameter NUMBER_OF_FREQS = 4
 )(
     input               clk,
     input               run,
@@ -30,18 +30,19 @@ module SineWaveGenerator # (
     output reg [23:0]   sin_out
 );
 
-reg [3:0] sin_count;
-reg [BCLK_DIV-1:0] clken_count;
-reg       clken; 
+reg [2:0] sin_clken_count;
+reg [3:0] chnl_count;
+reg [5:0] sample_count;
+reg       sin_clken, sin_data_ready; 
 
 wire [23:0] sin_data_out;
 wire [15:0] m_axis_phase_tdata;
     
 sinWaveGen test_sin (
   .aclk                 (clk),                  // input wire aclk
-  .aclken               (clken),                // input wire aclken
+  .aclken               (sin_clken),            // input wire aclken
   .m_axis_data_tvalid   (sin_data_valid),       // output wire m_axis_data_tvalid
-  .m_axis_data_tready   (run),                  // input wire m_axis_data_tready
+  .m_axis_data_tready   (sin_data_ready),                  // input wire m_axis_data_tready
   .m_axis_data_tdata    (sin_data_out),         // output wire [23 : 0] m_axis_data_tdata
   // the rest below is not used
   .m_axis_phase_tvalid  (m_axis_phase_tvalid),  // input wire s_axis_phase_tvalid
@@ -50,38 +51,94 @@ sinWaveGen test_sin (
   .event_pinc_invalid   (event_pinc_invalid)    // output wire event_pinc_invalid
 );
 
-// sin_data_out provides a multiple output stream of different defined frequencies, in a defined order
-// sin_count[3:0] => 4125Hz, 2250Hz, 562Hz, 93Hz :: order 0=>3
+// divide mclk 49.152MHz by 8 to create 6.144MHz via clken
 always @ (posedge clk) begin
-    if (!sin_data_valid || !run) begin
-        sin_count <= 0;
-        sin_out <= 0;
-        data_valid <= 1'b0;
+    if (!run) begin
+        sin_clken <= 1'b0;
+        sin_clken_count <= 0;
     end
-    else if (sin_count == freq_sel) begin
-        sin_count <= sin_count + 1;;
-        sin_out <= sin_data_out;
-        data_valid <= 1'b1;
+    else if (sample_count == 3'b111) begin      // divide by 8
+        sin_clken_count <= 0;;
+        sin_clken <= 1'b1;
     end
     else begin
-        sin_count <= sin_count + 1;
-        sin_out <= sin_out;
-        data_valid <= 1'b0;
+        sin_clken_count <= sin_clken_count + 1;
+        sin_clken <= 1'b0;
     end
 end
 
+// Count off 64 sin_clken for a 96000Hz sample rate
+// generate data_valid
 always @ (posedge clk) begin
-    if (!sin_data_valid || !run) begin
-        clken_count <= 0;
-        clken <= 1'b0;
-    end
-    else if (clken_count == freq_sel) begin
-        clken_count <= clken_count + 1;;
-        clken <= 1'b1;
+    if (!run) begin
+        sin_data_ready <= 0;
+        data_valid <= 1'b0;
     end
     else begin
-        clken_count <= clken_count + 1;
-        clken <= 1'b0;
+        if (sin_clken) begin
+            if (sample_count == 6'h3f) begin
+                sin_data_ready = 1'b1;
+                data_valid <= 1'b1;
+            end
+            else begin
+                sample_count <= sample_count + 1;
+                data_valid <= 1'b0;
+            end
+        end
+        else begin
+            sample_count <= sample_count;
+            data_valid <= 1'b0;
+        end
+    end
+end
+
+
+
+// sin_data_out provides a multiple output stream of different defined frequencies, in a defined order
+// sin_count[3:0] => 4125Hz, 2250Hz, 562Hz, 93Hz :: order 0=>3
+
+
+always @ (posedge clk) begin
+    if (!run) begin
+        sin_data_ready <= 1'b0;
+        chnl_count <= 0;      
+    end
+    else begin
+        if (sin_clken) begin
+            if ((sample_count == 6'h3f) && sin_data_valid) begin
+                sin_data_ready <= 1'b1;
+                chnl_count <= 0;                  
+            end
+            else if ((chnl_count == NUMBER_OF_FREQS-1) && sin_data_ready) begin
+                sin_data_ready <= 1'b0;
+                chnl_count <= 0;                                  
+            end
+            else begin
+                sin_data_ready <= sin_data_ready;
+                chnl_count <= chnl_count + 1;
+            end
+        end
+        else begin
+            sin_data_ready <= sin_data_ready;
+            chnl_count <= chnl_count;
+        end
+    end
+end
+
+
+
+always @ (posedge clk) begin
+    if (!sin_data_valid || !run) 
+        sin_out <= 0;
+    else begin
+        if (sin_clken) begin
+            if (chnl_count == freq_sel) 
+                sin_out <= sin_data_out;
+            else
+                sin_out <= sin_out;
+        end
+        else
+            sin_out <= sin_out;
     end
 end
 

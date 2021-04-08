@@ -27,7 +27,7 @@ wire        l_fifo_full, l_fifo_empty;
 wire        r_fifo_full, r_fifo_empty;
 wire        l_half_full, r_half_full;
 
-assign s_data = shift_data_reg[0];
+assign s_data = shift_data_reg[23];
 
 // timing signals @ sample freq = 96KHz
 // bclk, bclk_en generation ** bclk = 49.152MHz/16
@@ -61,9 +61,12 @@ end
 
 // lrclk, l_data_load, r_data_load generation ** lrclk = bclk/64
 always @ (posedge clk) begin    // clk freq = 49.152MHz
-    if (i2s_en) begin
+    if (!i2s_en) begin
         bit_count <= 0;    
-     end
+        lrclk <= 1'b0;
+        l_fifo_rd_en <= 1'b0;
+        r_fifo_rd_en <= 1'b0;
+    end
     else if (bclk_en) begin         // 1 lrclk = 64 bclk                
         case (bit_count)
             31  : begin
@@ -134,31 +137,27 @@ always @ (posedge clk) begin
     if (bclk_en) begin
         lrclk_dly <= lrclk;
         if (!lrclk && lrclk_dly) begin           
-            if (l_fifo_empty)
-                shift_data_reg <= 0;
+//          if (l_fifo_empty)
+//              shift_data_reg <= 0;
+            if (audio_test)
+                shift_data_reg <= 24'h666aaa;
             else
                 shift_data_reg <= l_fifo_dout;
         end
         else if (lrclk && !lrclk_dly) begin
-            if (r_fifo_empty)
-                if (audio_test)
-                    shift_data_reg <= 24'h555999;
-                else
-                    shift_data_reg <= 0;
+//          if (r_fifo_empty)
+//              shift_data_reg <= 0;
+            if (audio_test)
+                shift_data_reg <= 24'h555999;
             else
-                if (audio_test)
-                    shift_data_reg <= 24'haaa666;
-                else
-                    shift_data_reg <= r_fifo_dout;
-        end
+                shift_data_reg <= r_fifo_dout;
+    end
         else begin // shift right, lsb first
-//            s_data <= shift_data_reg[0];
-            shift_data_reg[23] <= 1'b0;
-            shift_data_reg[22:0] <= shift_data_reg[23:1];
+            shift_data_reg[0] <= 1'b0;
+            shift_data_reg[23:1] <= shift_data_reg[22:0];
         end
     end
     else begin
-//        s_data <= s_data;
         shift_data_reg <= shift_data_reg; 
         lrclk_dly <= lrclk_dly;           
     end
