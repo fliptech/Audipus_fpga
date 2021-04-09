@@ -25,9 +25,10 @@ module SineWaveGenerator # (
 )(
     input               clk,
     input               run,
+    input               sin_select,
     input [3:0]         freq_sel,   // [3:0] => ... 4125Hz, 2250Hz, 562Hz, 93Hz
     output reg          data_valid,
-    output reg [23:0]   sin_out
+    output [23:0]       wave_out
 );
 
 reg [2:0] sin_clken_count;
@@ -36,7 +37,14 @@ reg [5:0] sample_count;
 reg       sin_clken, sin_data_ready; 
 
 wire [23:0] sin_data_out;
+reg [23:0] sin_out;
 wire [15:0] m_axis_phase_tdata;
+
+reg neg;
+reg [7:0] triangle_count;
+
+
+assign wave_out = sin_select ? sin_out : {triangle_count, 16'h0000};
     
 sinWaveGen test_sin (
   .aclk                 (clk),                  // input wire aclk
@@ -57,8 +65,8 @@ always @ (posedge clk) begin
         sin_clken <= 1'b0;
         sin_clken_count <= 0;
     end
-    else if (sample_count == 3'b111) begin      // divide by 8
-        sin_clken_count <= 0;;
+    else if (sin_clken_count == 3'b111) begin      // divide by 8
+        sin_clken_count <= 0;
         sin_clken <= 1'b1;
     end
     else begin
@@ -71,14 +79,14 @@ end
 // generate data_valid
 always @ (posedge clk) begin
     if (!run) begin
-        sin_data_ready <= 0;
         data_valid <= 1'b0;
+        sample_count <= 0;
     end
     else begin
         if (sin_clken) begin
             if (sample_count == 6'h3f) begin
-                sin_data_ready = 1'b1;
                 data_valid <= 1'b1;
+                sample_count <= 0;
             end
             else begin
                 sample_count <= sample_count + 1;
@@ -94,53 +102,73 @@ end
 
 
 
+
+// load chosen sin wave frequency from the data stream - selected by freq_sel
 // sin_data_out provides a multiple output stream of different defined frequencies, in a defined order
 // sin_count[3:0] => 4125Hz, 2250Hz, 562Hz, 93Hz :: order 0=>3
-
-
+// generates hanshaking with the sin wave generator (IP)
 always @ (posedge clk) begin
     if (!run) begin
         sin_data_ready <= 1'b0;
-        chnl_count <= 0;      
+        chnl_count <= 0;
+        sin_out <= 0;      
     end
     else begin
         if (sin_clken) begin
             if ((sample_count == 6'h3f) && sin_data_valid) begin
                 sin_data_ready <= 1'b1;
-                chnl_count <= 0;                  
+                chnl_count <= 0;
+                sin_out <= sin_out;                  
             end
             else if ((chnl_count == NUMBER_OF_FREQS-1) && sin_data_ready) begin
                 sin_data_ready <= 1'b0;
                 chnl_count <= 0;                                  
+                sin_out <= sin_data_out;
             end
             else begin
                 sin_data_ready <= sin_data_ready;
                 chnl_count <= chnl_count + 1;
+                sin_out <= sin_out;
             end
         end
         else begin
             sin_data_ready <= sin_data_ready;
             chnl_count <= chnl_count;
-        end
-    end
-end
-
-
-
-always @ (posedge clk) begin
-    if (!sin_data_valid || !run) 
-        sin_out <= 0;
-    else begin
-        if (sin_clken) begin
-            if (chnl_count == freq_sel) 
-                sin_out <= sin_data_out;
-            else
-                sin_out <= sin_out;
-        end
-        else
             sin_out <= sin_out;
+        end
     end
 end
+
+// triangle wave test
+always @ (posedge clk) begin
+    if (!run) begin
+        triangle_count <= 0;
+//        neg <= 1'b0;
+     end
+    else begin
+        if ((sample_count == 6'h3f) && sin_clken) begin
+//            if (!neg) begin
+                triangle_count <= triangle_count + 1;
+//                if (triangle_count == 6'hfe)
+//                    neg <= 1'b1;
+//                else
+//                    neg <= neg;
+ //           end
+//            else begin
+//                triangle_count <= triangle_count - 1;
+//                if (triangle_count == 6'h01)
+//                    neg <= 1'b0;
+//                else
+ //                   neg <= neg;
+ //           end
+        end
+        else begin
+            triangle_count <= triangle_count;
+ //           neg <= neg;
+        end
+    end
+end
+
 
          
 endmodule

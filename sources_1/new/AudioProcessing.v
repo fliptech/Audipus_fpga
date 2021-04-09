@@ -37,6 +37,7 @@ module AudioProcessing #(
     output reg dac_bclk,
     output reg dac_lrclk,
     output reg dac_data,
+    output     pcmToI2S_valid,          // mainly for test
     // audio SRAM interface signals
 //    output reg sram_spi_cs,
 //    output reg sram_spi_clk,
@@ -51,7 +52,10 @@ module AudioProcessing #(
     input [7:0] coef_wr_msb_data,   // cpu reg
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
-    output [7:0] audio_status       // cpu reg
+    output [7:0] audio_status,       // cpu reg
+    // test
+    output      sin_wave_valid,
+    output [7:0] wave             
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
@@ -68,7 +72,7 @@ wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
-wire [23:0] sin_wave, l_eq_out, r_eq_out;
+wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 
 
@@ -78,12 +82,14 @@ wire eq_bypass =        audio_control[1];
 wire audio_enable =     audio_control[2];
 wire sin_test_en =      audio_control[3];
 wire output_test_en =   audio_control[4];
+wire sin_select =       audio_control[5];
 //assign dac_rst =        audio_control[];
 
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
-
+// test
+assign wave = wave_out[23:16];
 
 //////////////////// FIR Bypass Mux ////////////////////////////
 assign dac_sclk = fir_bypass ? i2s_sclk : clkGen_i2s_clk;
@@ -171,17 +177,18 @@ EqualizerGains eq_gain (
 
 SineWaveGenerator sinGen(
     .clk        (clk),                  // input
-    .run        (sin_test_en),          // input
+    .run        (sin_test_en),          // input, 1=sin wave, 0=triangle wave
+    .sin_select (sin_select),           // input
     .freq_sel   (filter_select[7:4]),   // input [3:0], selects freq out from a stream
     .data_valid (sin_wave_valid),       // output strobe
-    .sin_out    (sin_wave)              // output [23:0]
+    .wave_out   (wave_out)              // output [23:0]
 );
     
 
 //////////////////// sin wave test Mux ////////////////////////////
 
-assign l_mux_out =  sin_test_en ?   sin_wave : l_eq_out;
-assign r_mux_out =  sin_test_en ?   sin_wave : r_eq_out;
+assign l_mux_out =  sin_test_en ?   wave_out : l_eq_out;
+assign r_mux_out =  sin_test_en ?   wave_out : r_eq_out;
 wire l_mux_en = sin_test_en ?  sin_wave_valid : l_eq_valid;
 wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
 //////////////////////////////////////////////////////////////
@@ -197,6 +204,7 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .r_data         (r_mux_out),        // [23:0] input
     .bclk           (pcmToI2S_bclk),    // output
     .lrclk          (pcmToI2S_lrclk),   // output
+    .i2s_valid      (pcmToI2S_valid),   // output
     .s_data         (pcmToI2S_data)     // output
 );    
 

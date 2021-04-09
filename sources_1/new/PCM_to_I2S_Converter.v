@@ -9,10 +9,11 @@ module PCM_to_I2S_Converter(
 //    output          sclk,  // use i2s_sclk from ClockGeneration
     output reg      bclk,
     output reg      lrclk,
+    output reg      i2s_valid,
     output          s_data
 );    
 
-reg         bclk_en, l_shift_en, r_shift_en, lrclk_dly, i2s_en;
+reg         bclk_en, l_shift_en, r_shift_en, lrclk_dly;
 //reg [2:0]   bclk_shift, lrclk_shift;
 reg [23:0]  shift_data_reg;
 //reg [23:0]  l_data_reg, r_data_reg;
@@ -61,7 +62,7 @@ end
 
 // lrclk, l_data_load, r_data_load generation ** lrclk = bclk/64
 always @ (posedge clk) begin    // clk freq = 49.152MHz
-    if (!i2s_en) begin
+    if (!i2s_valid) begin
         bit_count <= 0;    
         lrclk <= 1'b0;
         l_fifo_rd_en <= 1'b0;
@@ -92,16 +93,18 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
     else begin
         bit_count <= bit_count;
         lrclk <= lrclk;
+        l_fifo_rd_en <= 1'b0;
+        r_fifo_rd_en <= 1'b0;
     end
 end
 
 always @ (posedge clk) begin    // clk freq = 49.152MHz
-    if (!audio_en) 
-        i2s_en <= 1'b0;
+    if (r_fifo_empty) 
+        i2s_valid <= 1'b0;
     else if (r_half_full) 
-        i2s_en <= 1'b1;
+        i2s_valid <= 1'b1;
     else
-        i2s_en <= i2s_en;
+        i2s_valid <= i2s_valid;
 end
 
 
@@ -151,7 +154,7 @@ always @ (posedge clk) begin
                 shift_data_reg <= 24'h555999;
             else
                 shift_data_reg <= r_fifo_dout;
-    end
+        end
         else begin // shift right, lsb first
             shift_data_reg[0] <= 1'b0;
             shift_data_reg[23:1] <= shift_data_reg[22:0];

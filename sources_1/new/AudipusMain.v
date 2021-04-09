@@ -99,7 +99,9 @@ parameter num_of_filters = 4;
     
     wire [7:0] eq_gain_lsb, eq_gain_msb;
     
-    assign pcm9211_clk = i2s_clk_out;    
+    assign pcm9211_clk = i2s_clk_out; 
+    
+    wire    pcmToT2S_valid;   
     
 
         
@@ -216,11 +218,12 @@ parameter num_of_filters = 4;
         .i2s_d              (pcm9211_i2s_d),
         .clkGen_i2s_clk     (clkGen_i2s_clk),
         //output i2s
-        .audio_enable       (dac_rst),
+        .audio_enable       (!dac_rst),
         .dac_sclk           (dac_sclk),
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),
+        .pcmToI2S_valid     (pcmToI2S_valid),
         // audio SRAM interface signals
 //        .sram_spi_cs        (spi_cs),
 //        .sram_spi_clk       (spi_clk),
@@ -235,7 +238,10 @@ parameter num_of_filters = 4;
         .coef_wr_msb_data   (fir_coef_msb),
         .eq_wr_lsb_data     (eq_gain_lsb),
         .eq_wr_msb_data     (eq_gain_msb),
-        .audio_status       (audio_status_reg)
+        .audio_status       (audio_status_reg),
+        // test
+        .sin_wave_valid     (test[5]),
+        .wave               (test[15:8])
     );
     
 
@@ -272,6 +278,7 @@ parameter num_of_filters = 4;
 */ 
 // I2S Test
     assign test[3:0] = {dac_rst, dac_data, dac_lrclk, dac_bclk};
+    assign test[4] = pcmToI2S_valid;
     assign test[17] = clk;      
 
   
