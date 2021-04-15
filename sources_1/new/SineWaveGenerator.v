@@ -28,13 +28,18 @@ module SineWaveGenerator # (
     input               sin_select,
     input [3:0]         freq_sel,   // [3:0] => ... 4125Hz, 2250Hz, 562Hz, 93Hz
     output reg          data_valid,
-    output [23:0]       wave_out
+    output [23:0]       wave_out,
+    //for test
+    output reg          sin_clken, 
+    output              sin_data_valid, 
+    output reg          sin_data_ready
 );
 
 reg [2:0] sin_clken_count;
 reg [3:0] chnl_count;
 reg [5:0] sample_count;
-reg       sin_clken, sin_data_ready; 
+//reg       sin_clken, sin_data_ready; 
+//wire    sin_data_valid;
 
 wire [23:0] sin_data_out;
 reg [23:0] sin_out;
@@ -120,9 +125,17 @@ always @ (posedge clk) begin
                 chnl_count <= 0;
                 sin_out <= sin_out;                  
             end
-            else if ((chnl_count == NUMBER_OF_FREQS-1) && sin_data_ready) begin
+            else if ((chnl_count == NUMBER_OF_FREQS - 1) && sin_data_ready) begin
                 sin_data_ready <= 1'b0;
-                chnl_count <= 0;                                  
+                chnl_count <= 0; 
+                if (chnl_count == freq_sel)                                 
+                    sin_out <= sin_data_out;
+                else
+                    sin_out <= sin_out;
+            end
+            else if ((chnl_count == freq_sel) && sin_data_ready) begin
+                sin_data_ready <= 1'b1;
+                chnl_count <= chnl_count + 1;                                  
                 sin_out <= sin_data_out;
             end
             else begin
@@ -147,24 +160,24 @@ always @ (posedge clk) begin
      end
     else begin
         if ((sample_count == 6'h3f) && sin_clken) begin
-//            if (!neg) begin
+            if (!neg) begin
                 triangle_count <= triangle_count + 1;
-//                if (triangle_count == 6'hfe)
-//                    neg <= 1'b1;
-//                else
-//                    neg <= neg;
- //           end
-//            else begin
-//                triangle_count <= triangle_count - 1;
-//                if (triangle_count == 6'h01)
-//                    neg <= 1'b0;
-//                else
- //                   neg <= neg;
- //           end
+                if (triangle_count == 6'hfe)
+                    neg <= 1'b1;
+                else
+                    neg <= neg;
+                end
+            else begin
+                triangle_count <= triangle_count - 1;
+                if (triangle_count == 6'h01)
+                    neg <= 1'b0;
+                else
+                    neg <= neg;
+            end
         end
         else begin
             triangle_count <= triangle_count;
- //           neg <= neg;
+            neg <= neg;
         end
     end
 end

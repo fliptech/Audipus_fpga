@@ -62,6 +62,7 @@ module spi_Interface # (
 //  aux
     output reg [7:0]    aux_reg,
 //  for test
+    output reg [7:0]    test_reg,
     output              shift_in_clken,
     output              shift_out_clken,
     output              miso_tristate,
@@ -83,7 +84,7 @@ wire [num_of_data_bits-1:0]     spi_write_data;
 	parameter FILTER_SEL       = 7'h03;    // Filter to be accessed, max. number = parameter num_of_filters
 	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
 	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
-	parameter AUX              = 7'h06;    // aux Reg (tbd) test Reg
+	parameter AUX              = 7'h06;    // aux Reg
 	parameter SRAM_CONTROL     = 7'h07;    // page for sram
 	parameter SRAM_ADDR        = 7'h08;    // selects sram start address for auto-increment
 	parameter SPI_TO_SRAM      = 7'h09;    // write, sram->spi, for a given page, addr is auto-incremented
@@ -94,6 +95,7 @@ wire [num_of_data_bits-1:0]     spi_write_data;
 	parameter EQ_GAIN_LSB      = 7'h0e;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
 	parameter EQ_GAIN_MSB      = 7'h0f;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
 	parameter STATUS           = 7'h10;    // Status, write only
+	parameter TEST             = 7'h11;    // test Reg
 	
 
 
@@ -135,6 +137,7 @@ always @ (posedge clk) begin
 			else if (spi_addr == MPIO_CONTROL)   mpio_control_reg            <= spi_write_data;
 			else if (spi_addr == SPI_TO_MPIO)    spi_to_mpio_reg             <= spi_write_data;
 			else if (spi_addr == AUX)            aux_reg                     <= spi_write_data;
+			else if (spi_addr == TEST)           test_reg                    <= spi_write_data;
     end
 end
 
@@ -152,6 +155,7 @@ always @ (posedge clk) begin
             (spi_addr == MPIO_CONTROL)   ?   mpio_control_reg :
             (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
             (spi_addr == AUX)            ?   aux_reg :
+            (spi_addr == TEST)           ?   test_reg :
             (spi_addr == AUD_STATUS)     ?   status :
             
             8'h99;

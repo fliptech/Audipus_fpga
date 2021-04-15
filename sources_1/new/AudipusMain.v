@@ -91,7 +91,7 @@ parameter num_of_filters = 4;
     wire [7:0] sram_to_spi_data, spi_to_sram_reg;   
     wire [7:0] sram_control;
 // aux connections   
-    wire [7:0] aux_reg; 
+    wire [7:0] aux_reg, test_reg; 
     assign aux = {2'b00, aux_reg};   
 // mpio connections    
     wire [7:0] mpio_control_reg;
@@ -116,6 +116,9 @@ parameter num_of_filters = 4;
     //test
 //    wire [4:0]       spi_bit_count;
 //    wire [2:0]       spi_shift_clk;
+     // for test
+    wire    sin_clken, sin_gen_valid, sin_data_ready;
+
     wire            shift_in_clken, shift_out_clken;
     wire            miso_tristate;
     wire            clkGen_i2s_clk;
@@ -190,6 +193,7 @@ parameter num_of_filters = 4;
         // aux
         .aux_reg                (aux_reg),
         // test
+        .test_reg               (test_reg),
         .shift_in_clken         (shift_in_clken),       
         .shift_out_clken        (shift_out_clken),
         .miso_tristate          (miso_tristate), 
@@ -233,6 +237,7 @@ parameter num_of_filters = 4;
         .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
         .filter_select      (filter_select_reg),
+        .sin_freq_select    (test_reg[3:0]),
         .taps_per_filter    (number_of_taps_reg),
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
@@ -241,7 +246,12 @@ parameter num_of_filters = 4;
         .audio_status       (audio_status_reg),
         // test
         .sin_wave_valid     (test[5]),
-        .wave               (test[15:8])
+        .wave               (test[15:8]),
+        // for test
+        .sin_clken          (test[3]), 
+        .sin_data_valid     (test[6]), 
+        .sin_data_ready     (test[7])
+        
     );
     
 
@@ -277,7 +287,7 @@ parameter num_of_filters = 4;
 //    assign test[15:13] = ;
 */ 
 // I2S Test
-    assign test[3:0] = {dac_rst, dac_data, dac_lrclk, dac_bclk};
+    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
     assign test[4] = pcmToI2S_valid;
     assign test[17] = clk;      
 

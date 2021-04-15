@@ -47,6 +47,7 @@ module AudioProcessing #(
     input       eq_wr_en,
     input [7:0] audio_control,      // cpu reg
     input [7:0] filter_select,      // cpu reg 
+    input [3:0] sin_freq_select,    // cpu reg 
     input [7:0] taps_per_filter,    // cpu reg
     input [7:0] coef_wr_lsb_data,   // cpu reg
     input [7:0] coef_wr_msb_data,   // cpu reg
@@ -55,7 +56,12 @@ module AudioProcessing #(
     output [7:0] audio_status,       // cpu reg
     // test
     output      sin_wave_valid,
-    output [7:0] wave             
+    output [7:0] wave,
+    //for test
+    output              sin_clken, 
+    output              sin_data_valid, 
+    output              sin_data_ready
+                 
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
@@ -179,9 +185,14 @@ SineWaveGenerator sinGen(
     .clk        (clk),                  // input
     .run        (sin_test_en),          // input, 1=sin wave, 0=triangle wave
     .sin_select (sin_select),           // input
-    .freq_sel   (filter_select[7:4]),   // input [3:0], selects freq out from a stream
+    .freq_sel   (sin_freq_select[3:0]), // input [3:0], selects freq out from a stream
     .data_valid (sin_wave_valid),       // output strobe
-    .wave_out   (wave_out)              // output [23:0]
+    .wave_out   (wave_out),              // output [23:0]
+    // for test
+    .sin_clken  (sin_clken), 
+    .sin_data_valid (sin_gen_valid), 
+    .sin_data_ready (sin_data_ready)
+
 );
     
 
