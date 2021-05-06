@@ -25,7 +25,6 @@ module I2S_to_PCM_Converter # (
 ) (
     input               clk,
     input               reset_n,
-    input               sclk,
     input               bclk,
     input               lrclk,
     input               i2s_data,

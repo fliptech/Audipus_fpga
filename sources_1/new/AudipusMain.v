@@ -99,7 +99,9 @@ parameter num_of_filters = 4;
     
     wire [7:0] eq_gain_lsb, eq_gain_msb;
     
-    assign pcm9211_clk = i2s_clk_out; 
+    assign pcm9211_clk = clkGen_i2s_clk; 
+    assign i2s_clk_out = clkGen_i2s_clk; 
+    assign dac_sclk = clkGen_i2s_clk; 
     
     wire    pcmToT2S_valid;   
     
@@ -216,14 +218,11 @@ parameter num_of_filters = 4;
         .clk                (clk),
         .reset_n            (reset_n),
         // input i2s
-        .i2s_sclk           (pcm9211_i2s_sclk),
         .i2s_bclk           (pcm9211_i2s_bclk),
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
-        .clkGen_i2s_clk     (clkGen_i2s_clk),
         //output i2s
         .audio_enable       (!dac_rst),
-        .dac_sclk           (dac_sclk),
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),

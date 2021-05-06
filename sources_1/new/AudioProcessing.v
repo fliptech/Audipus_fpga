@@ -26,14 +26,11 @@ module AudioProcessing #(
     input clk,
     input reset_n,
     // i2s in
-    input i2s_sclk,
     input i2s_bclk,
     input i2s_lrclk,
     input i2s_d,
-    input clkGen_i2s_clk,
     // dac interface, i2s out
     output audio_enable,
-    output     dac_sclk,
     output reg dac_bclk,
     output reg dac_lrclk,
     output reg dac_data,
@@ -87,8 +84,8 @@ wire fir_bypass =       audio_control[0];
 wire eq_bypass =        audio_control[1];
 wire audio_enable =     audio_control[2];
 wire sin_test_en =      audio_control[3];
-wire output_test_en =   audio_control[4];
-wire sin_select =       audio_control[5];
+wire output_test_en =   audio_control[4];   // selects a fixed output pattern
+wire sin_select =       audio_control[5];   // 1=sin wave, 0=triangle wave
 //assign dac_rst =        audio_control[];
 
 // audio_status register
@@ -98,7 +95,6 @@ assign audio_status[1]  = eq_wr_addr_zero;
 assign wave = wave_out[23:16];
 
 //////////////////// FIR Bypass Mux ////////////////////////////
-assign dac_sclk = fir_bypass ? i2s_sclk : clkGen_i2s_clk;
 
 always @ (posedge clk) begin
     if (fir_bypass) begin
@@ -120,7 +116,6 @@ end
 I2S_to_PCM_Converter i2s_to_pcm(
     .clk            (clk),              // input
     .reset_n        (reset_n),          // input
-    .sclk           (i2s_sclk),         // input
     .bclk           (i2s_bclk),         // input
     .lrclk          (i2s_lrclk),        // input
     .i2s_data       (i2s_d),            // input
@@ -183,8 +178,8 @@ EqualizerGains eq_gain (
 
 SineWaveGenerator sinGen(
     .clk        (clk),                  // input
-    .run        (sin_test_en),          // input, 1=sin wave, 0=triangle wave
-    .sin_select (sin_select),           // input
+    .run        (sin_test_en),          // input, enables sin (or triangle) output
+    .sin_select (sin_select),           // input, 1=sin wave, 0=triangle wave
     .freq_sel   (sin_freq_select[3:0]), // input [3:0], selects freq out from a stream
     .data_valid (sin_wave_valid),       // output strobe
     .wave_out   (wave_out),              // output [23:0]
@@ -208,7 +203,7 @@ wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
     .audio_en       (audio_enable),     // input
-    .audio_test     (output_test_en),   // input
+    .audio_test     (output_test_en),   // input, selects a fixed pattern
     .l_data_en      (l_mux_en),         // input
     .r_data_en      (r_mux_en),         // input
     .l_data         (l_mux_out),        // [23:0] input

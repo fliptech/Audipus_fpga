@@ -25,7 +25,7 @@ module SineWaveGenerator # (
 )(
     input               clk,
     input               run,
-    input               sin_select,
+    input               sin_select, // selects between sin & triange wave
     input [3:0]         freq_sel,   // [3:0] => ... 4125Hz, 2250Hz, 562Hz, 93Hz
     output reg          data_valid,
     output [23:0]       wave_out,
