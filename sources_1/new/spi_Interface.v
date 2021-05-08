@@ -156,7 +156,7 @@ always @ (posedge clk) begin
             (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
             (spi_addr == AUX)            ?   aux_reg :
             (spi_addr == TEST)           ?   test_reg :
-            (spi_addr == AUD_STATUS)     ?   status :
+            (spi_addr == STATUS)         ?   status :
             
             8'h99;
     end
