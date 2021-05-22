@@ -106,10 +106,15 @@ parameter num_of_filters = 4;
     wire    pcmToT2S_valid;   
     
 
-        
-    wire [7:0] status = 
-        {1'b0, rPix, rPi20, rPi17, dac_zero_l, dac_zero_r, 
+    // status register        
+    wire [6:0] status_reg = 
+        {1'b0, 1'b0, 1'b0, 1'b0, 1'b0, rPi20, rPi17};
+    
+    // interrupt register
+    wire [7:0] interrupt_reg = 
+        {1'b0, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
          pcm9211_int1, pcm9211_int0}; 
+ 
     
     wire [7:0]   sram_control_reg;
     
@@ -142,7 +147,10 @@ parameter num_of_filters = 4;
     //audio control register
     assign spdif_out = 1'b0;        // temp << check
 
-
+    // interrupt register
+    wire [7:0] interrupt_reg = 
+        {1'b0, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
+         pcm9211_int1, pcm9211_int0}; 
     
     ClockGeneration system_clks (
         .main_clk   (main_clk),
@@ -172,8 +180,9 @@ parameter num_of_filters = 4;
         .coef_wr_stb            (coef_wr_en),
         .eq_wr_stb              (eq_wr_en),
 //  input registers, input [7:0]
-        .status                 (status_reg),
+        .status                 (status_reg),       // in [6:0]
         .audio_status           (audio_status_reg),
+        .interrupt_input        (interrupt_reg),        // interrupt[7] used
         .sram_to_spi_data       (sram_to_spi_data),           
         .mpio_to_spi_data       (mpio_to_spi_data),           
 //  output registers, output [7:0]
@@ -236,13 +245,13 @@ parameter num_of_filters = 4;
         .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
         .filter_select      (filter_select_reg),
-        .sin_freq_select    (test_reg[3:0]),
         .taps_per_filter    (number_of_taps_reg),
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
         .eq_wr_lsb_data     (eq_gain_lsb),
         .eq_wr_msb_data     (eq_gain_msb),
         .audio_status       (audio_status_reg),
+        .test_reg           (test_reg),
         // test
         .sin_wave_valid     (test[5]),
         .wave               (test[15:8]),

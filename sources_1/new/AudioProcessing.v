@@ -44,13 +44,13 @@ module AudioProcessing #(
     input       eq_wr_en,
     input [7:0] audio_control,      // cpu reg
     input [7:0] filter_select,      // cpu reg 
-    input [3:0] sin_freq_select,    // cpu reg 
     input [7:0] taps_per_filter,    // cpu reg
     input [7:0] coef_wr_lsb_data,   // cpu reg
     input [7:0] coef_wr_msb_data,   // cpu reg
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
-    output [7:0] audio_status,       // cpu reg
+    output [7:0] audio_status,      // cpu reg
+    output [7:0] test_reg,          // cpu reg
     // test
     output      sin_wave_valid,
     output [7:0] wave,
@@ -80,14 +80,15 @@ wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters
 
 
 /////// audio control register ////////
-wire fir_bypass =       audio_control[0];
-wire eq_bypass =        audio_control[1];
-wire audio_enable =     audio_control[2];
-wire sin_test_en =      audio_control[3];
-wire output_test_en =   audio_control[4];   // selects a fixed output pattern
-wire sin_select =       audio_control[5];   // 1=sin wave, 0=triangle wave
-//assign dac_rst =        audio_control[];
-
+wire audio_enable =     audio_control[0];
+//assign dac_rst =        audio_control[1];
+/////// test control register ////////
+wire fir_bypass =       test_reg[0];   // [0]
+wire eq_bypass =        test_reg[1];   // [1]
+wire output_test_en =   test_reg[2];   // [4] selects a fixed output pattern
+wire sin_test_en =      test_reg[3];   // [3]
+wire sin_select =       test_reg[4];   // [5] 1=sin wave, 0=triangle wave
+wire [3:0] sin_freq_select =  {1'b0, test_reg[7:5]};
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;

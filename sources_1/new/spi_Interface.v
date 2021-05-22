@@ -38,8 +38,9 @@ module spi_Interface # (
     output reg          coef_wr_stb,
     output reg          eq_wr_stb,
 //  input registers
-    input [7:0]         status,  
+    input [7:0]         status,         // {interrupt, staus_reg}
     input [7:0]         audio_status,  
+    input [7:0]         interrupt_input,
     input [7:0]         sram_to_spi_data,
     input [7:0]         mpio_to_spi_data,
      
@@ -74,7 +75,12 @@ reg filter_tap, filter;
 reg [num_of_data_bits-1:0]      spi_read_data;
 wire [num_of_data_bits-1:0]     spi_write_data;
 //wire [num_of_addr_bits-1:0]  spi_addr;
+reg [6:0] interrupt_reg = 0;
 
+// STATUS REG
+reg interrupt, rd_strobe_dly; 
+wire [6:0] status_reg;  
+assign status = {interrupt, status_reg}; 
 
 //	GENERAL REGISTERS	
 //	Write / Read
@@ -96,6 +102,7 @@ wire [num_of_data_bits-1:0]     spi_write_data;
 	parameter EQ_GAIN_MSB      = 7'h0f;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
 	parameter STATUS           = 7'h10;    // Status, write only
 	parameter TEST             = 7'h11;    // test Reg
+	parameter INTERRUPT        = 7'h12;     // interrupt Reg, rd only, clears after read
 	
 
 
@@ -156,7 +163,8 @@ always @ (posedge clk) begin
             (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
             (spi_addr == AUX)            ?   aux_reg :
             (spi_addr == TEST)           ?   test_reg :
-            (spi_addr == STATUS)         ?   status :
+            (spi_addr == STATUS)         ?   status_reg :
+            (spi_addr == INTERRUPT)      ?   interrupt_reg :
             
             8'h99;
     end
@@ -168,6 +176,23 @@ always @ (posedge clk) begin
     coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;
     eq_wr_stb <= (spi_addr == EQ_GAIN_MSB) && wr_strobe;
 end
+
+
+// Interrupt Register
+always @ (posedge clk) begin
+    rd_strobe_dly <= rd_strobe;
+    if (interrupt_input != interrupt_reg) begin
+        interrupt_reg <= interrupt_input;   // change in interrup status held in interrupt_reg
+        interrupt <= 1'b1;                  // set interrupt status in status register
+    end
+    else if ((spi_addr == INTERRUPT) && rd_strobe_dly) begin
+        interrupt_reg <= 0;                 // clear after inerrupt_reg rd
+        interrupt <= 1'b0;                  // clear after inerrupt_reg rd
+    end
+ end       
+        
+        
+    
 
         
 endmodule
