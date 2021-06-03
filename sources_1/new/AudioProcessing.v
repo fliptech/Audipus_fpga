@@ -51,14 +51,14 @@ module AudioProcessing #(
     input [7:0] eq_wr_msb_data,     // cpu reg
     output [7:0] audio_status,      // cpu reg
     output [7:0] test_reg,          // cpu reg
-    // test
-    output      sin_wave_valid,
-    output [7:0] wave,
-    //for test
-    output              sin_clken, 
-    output              sin_data_valid, 
-    output              sin_data_ready
-                 
+    // for test
+    output          test_dout_valid,
+    output [7:0]    test_data_out
+/*  // for sin test
+    output          sin_clken, 
+    output          sin_data_valid, 
+    output          sin_data_ready
+*/             
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
@@ -83,23 +83,25 @@ wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters
 wire audio_enable =     audio_control[0];
 //assign dac_rst =        audio_control[1];
 /////// test control register ////////
-wire fir_bypass =       test_reg[0];   // [0]
-wire eq_bypass =        test_reg[1];   // [1]
+wire dsp_bypass =       test_reg[0];   // [0] routes input i2s directly to output i2s
+wire eq_bypass =        test_reg[1];   // [1] bypasses equalizer (for fir tests)
 wire output_test_en =   test_reg[2];   // [4] selects a fixed output pattern
-wire sin_test_en =      test_reg[3];   // [3]
+wire sin_test_en =      test_reg[3];   // [3] enable sin wave output
 wire sin_select =       test_reg[4];   // [5] 1=sin wave, 0=triangle wave
-wire [3:0] sin_freq_select =  {1'b0, test_reg[7:5]};
+wire test_left =        test_reg[5];   // [5] 1=left, 0=right
+wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 // test
-assign wave = wave_out[23:16];
+assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
+assign test_dout_valid = test_left ? l_mux_en : r_mux_en;
 
 //////////////////// FIR Bypass Mux ////////////////////////////
 
 always @ (posedge clk) begin
-    if (fir_bypass) begin
-    // audio processor fir bypass
+    if (dsp_bypass) begin
+    // routes input i2s directly to output i2s
         dac_bclk <= i2s_bclk;
         dac_lrclk <= i2s_lrclk;
         dac_data <= i2s_d;

@@ -55,7 +55,7 @@ sinWaveGen test_sin (
   .aclk                 (clk),                  // input wire aclk
   .aclken               (sin_clken),            // input wire aclken
   .m_axis_data_tvalid   (sin_data_valid),       // output wire m_axis_data_tvalid
-  .m_axis_data_tready   (sin_data_ready),                  // input wire m_axis_data_tready
+  .m_axis_data_tready   (sin_data_ready),       // input wire m_axis_data_tready
   .m_axis_data_tdata    (sin_data_out),         // output wire [23 : 0] m_axis_data_tdata
   // the rest below is not used
   .m_axis_phase_tvalid  (m_axis_phase_tvalid),  // input wire s_axis_phase_tvalid

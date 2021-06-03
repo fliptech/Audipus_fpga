@@ -145,12 +145,20 @@ parameter num_of_filters = 4;
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
 
     //audio control register
+    
+    wire i2s_mux = audio_status_reg[7];
+    
     assign spdif_out = 1'b0;        // temp << check
 
     // interrupt register
     wire [7:0] interrupt_reg = 
         {1'b0, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
          pcm9211_int1, pcm9211_int0}; 
+         
+     // for test
+    wire        test_dout_valid;
+    wire [7:0]  test_wave;   
+     
     
     ClockGeneration system_clks (
         .main_clk   (main_clk),
@@ -253,15 +261,15 @@ parameter num_of_filters = 4;
         .audio_status       (audio_status_reg),
         .test_reg           (test_reg),
         // test
-        .sin_wave_valid     (test[5]),
-        .wave               (test[15:8]),
-        // for test
+        .test_dout_valid    (test_dout_valid),
+        .test_data_out      (test_data_out)
+ /* for sin test
         .sin_clken          (test[3]), 
         .sin_data_valid     (test[6]), 
         .sin_data_ready     (test[7])
+*/        
         
     );
-    
 
     PCM9211_mpio_Interface mpio (
         .mpio_control   (mpio_control_reg),     // input[1:0]
@@ -296,8 +304,14 @@ parameter num_of_filters = 4;
 */ 
 // I2S Test
     assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
+             
     assign test[4] = pcmToI2S_valid;
+    assign test[6] = test_dout_valid;
+    assign test [15:8] = test_data_out;
+    
     assign test[17] = clk;      
-
+ 
+            
+    
   
 endmodule
