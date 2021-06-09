@@ -303,7 +303,7 @@ parameter num_of_filters = 4;
 //    assign test[15:13] = ;
 */ 
 // I2S Test
-    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
+    assign test[3:0] = {pcm9211_i2s_sclk, dac_data, dac_lrclk, dac_bclk};
              
     assign test[4] = pcmToI2S_valid;
     assign test[6] = test_dout_valid;
