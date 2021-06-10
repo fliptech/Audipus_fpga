@@ -125,7 +125,8 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .l_dout_valid   (l_i2sToPcm_valid), // output strobe     
     .r_dout_valid   (r_i2sToPcm_valid), // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
-    .r_pcm_data     (r_pcm_data)        // [23:0] output
+    .r_pcm_data     (r_pcm_data),       // [23:0] output
+    .bit_cnt_reg    (i2sToPcm_bit_cnt)  // [7:0] output
 );    
     
 

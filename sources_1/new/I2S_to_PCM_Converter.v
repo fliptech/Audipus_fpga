@@ -31,7 +31,8 @@ module I2S_to_PCM_Converter # (
     output reg          l_dout_valid,       // strobe
     output reg          r_dout_valid,       // strobe
     output reg [23:0]   l_pcm_data,
-    output reg [23:0]   r_pcm_data
+    output reg [23:0]   r_pcm_data,
+    output reg [7:0]    bit_cnt_reg
 );
 
 reg         bclk_en;
@@ -52,22 +53,28 @@ always @ (posedge clk) begin
 end
 
 // lrclk edge detect, bit count & valid generation
+// load shifted data                
 always @ (posedge clk) begin
     if(bclk_en) begin
         lrclk_dly <= lrclk;
         if (lrclk_dly != lrclk) begin
             i2s_bit_cnt <= 0;
+            bit_cnt_reg <= i2s_bit_cnt;
             if (!lrclk) begin
                 l_dout_valid <= 1'b1;
+                l_pcm_data <= lr_shift_data;
             end
             else begin
                 r_dout_valid <= 1'b1;
+                r_pcm_data <= lr_shift_data;
             end
         end
         else begin
             i2s_bit_cnt <= i2s_bit_cnt + 1;
             l_dout_valid <= 1'b0;
             r_dout_valid <= 1'b0;
+            l_pcm_data <= l_pcm_data;
+            r_pcm_data <= r_pcm_data;
         end
     end
 end        
@@ -85,7 +92,7 @@ always @ (posedge clk) begin
 end
 
 
-// load shifted data                
+/* load shifted data                
 always @ (posedge clk) begin
     if(bclk_en) begin
         if (i2s_bit_cnt == (num_of_sample_bits - 1))
@@ -105,7 +112,7 @@ always @ (posedge clk) begin
         r_pcm_data <= r_pcm_data;
     end
 end
-
+*/
     
 
 
