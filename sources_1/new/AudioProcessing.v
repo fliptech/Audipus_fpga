@@ -51,6 +51,7 @@ module AudioProcessing #(
     input [7:0] eq_wr_msb_data,     // cpu reg
     output [7:0] audio_status,      // cpu reg
     output [7:0] test_reg,          // cpu reg
+    output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
     // for test
     output          test_dout_valid,
     output [7:0]    test_data_out
@@ -94,8 +95,10 @@ wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 // test
-assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
-assign test_dout_valid = test_left ? l_mux_en : r_mux_en;
+//assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
+//assign test_dout_valid = test_left ? l_mux_en : r_mux_en;
+assign test_data_out = test_left ? l_pcm_data[15:8] : l_pcm_data[16:9];
+assign test_dout_valid = test_left ? l_i2sToPcm_valid : r_i2sToPcm_valid;
 
 //////////////////// FIR Bypass Mux ////////////////////////////
 

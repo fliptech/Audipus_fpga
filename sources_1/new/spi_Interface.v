@@ -41,6 +41,7 @@ module spi_Interface # (
     input [7:0]         status,         // {interrupt, staus_reg}
     input [7:0]         audio_status,  
     input [7:0]         interrupt_input,
+    input [7:0]         i2sToPcm_bit_reg,
     input [7:0]         sram_to_spi_data,
     input [7:0]         mpio_to_spi_data,
      
@@ -102,8 +103,8 @@ assign status = {interrupt, status_reg};
 	parameter EQ_GAIN_MSB      = 7'h0f;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
 	parameter STATUS           = 7'h10;    // Status, write only
 	parameter TEST             = 7'h11;    // test Reg
-	parameter INTERRUPT        = 7'h12;     // interrupt Reg, rd only, clears after read
-	
+	parameter INTERRUPT        = 7'h12;    // interrupt Reg, rd only, clears after read
+	parameter I2SPCM_BIT_CNT   = 7'h13;    // number of bits in the i2sToPcm data
 
 
 
@@ -165,6 +166,7 @@ always @ (posedge clk) begin
             (spi_addr == TEST)           ?   test_reg :
             (spi_addr == STATUS)         ?   status_reg :
             (spi_addr == INTERRUPT)      ?   interrupt_reg :
+            (spi_addr == I2SPCM_BIT_CNT) ?   i2sToPcm_bit_reg :
             
             8'h99;
     end

@@ -116,7 +116,7 @@ parameter num_of_filters = 4;
          pcm9211_int1, pcm9211_int0}; 
  
     
-    wire [7:0]   sram_control_reg;
+    wire [7:0]   sram_control_reg, i2sToPcm_bit_reg, test_data_out;
     
     wire        spi_rd_stb, spi_wr_stb;
     
@@ -213,6 +213,7 @@ parameter num_of_filters = 4;
         .aux_reg                (aux_reg),
         // test
         .test_reg               (test_reg),
+        .i2sToPcm_bit_reg       (i2sToPcm_bit_reg),
         .shift_in_clken         (shift_in_clken),       
         .shift_out_clken        (shift_out_clken),
         .miso_tristate          (miso_tristate), 
@@ -260,6 +261,7 @@ parameter num_of_filters = 4;
         .eq_wr_msb_data     (eq_gain_msb),
         .audio_status       (audio_status_reg),
         .test_reg           (test_reg),
+        .i2sToPcm_bit_cnt   (i2sToPcm_bit_reg),
         // test
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out)
