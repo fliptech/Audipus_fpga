@@ -32,7 +32,8 @@ module I2S_to_PCM_Converter # (
     output reg          r_dout_valid,       // strobe
     output reg [23:0]   l_pcm_data,
     output reg [23:0]   r_pcm_data,
-    output reg [7:0]    bit_cnt_reg
+    output reg [7:0]    bit_cnt_reg,
+    output reg [9:0]    sub_sample_cnt
 );
 
 reg         bclk_en;
@@ -60,16 +61,23 @@ always @ (posedge clk) begin
         if (lrclk_dly != lrclk) begin
             i2s_bit_cnt <= 0;
             bit_cnt_reg <= i2s_bit_cnt;
-            if (!lrclk) begin
+            if (!lrclk) begin       // left chnl
                 l_dout_valid <= 1'b1;
                 l_pcm_data <= lr_shift_data;
-            end
-            else begin
+                sub_sample_counter <= sub_sample_counter + 1;
+                sub_sample_cnt <= sub_sample_cnt;
+
+             end
+            else begin              // right chnl
                 r_dout_valid <= 1'b1;
                 r_pcm_data <= lr_shift_data;
+                sub_sample_counter <= 0;
+                sub_sample_cnt <= sub_sample_counter;
             end
         end
         else begin
+            sub_sample_counter <= sub_sample_counter + 1;
+            sub_sample_cnt <= sub_sample_cnt;
             i2s_bit_cnt <= i2s_bit_cnt + 1;
             l_dout_valid <= 1'b0;
             r_dout_valid <= 1'b0;
@@ -77,6 +85,16 @@ always @ (posedge clk) begin
             r_pcm_data <= r_pcm_data;
         end
     end
+    else begin
+        sub_sample_counter <= sub_sample_counter + 1;
+        
+        sub_sample_cnt <= sub_sample_cnt;
+        i2s_bit_cnt <= i2s_bit_cnt;
+        l_dout_valid <= 1'b0;
+        r_dout_valid <= 1'b0;
+        l_pcm_data <= l_pcm_data;
+        r_pcm_data <= r_pcm_data;
+
 end        
 
             
@@ -90,6 +108,9 @@ always @ (posedge clk) begin
         lr_shift_data <= lr_shift_data;
     end
 end
+
+always @ (posedge clk) begin
+    if (bclk_en && 
 
 
 /* load shifted data                

@@ -15,8 +15,16 @@
 // 
 // Revision:
 // Revision 0.01 - File Created
+//
 // Additional Comments:
-// 
+//  Interpolation formular: InterpValue = snd_data[0]*(maxCcnt - smplCnt) + snd_data[1]*(smplCnt)
+//
+//                           InterpValue
+//                               V
+//                      X--------|--------------X               >> time
+//               snd_data[0]                snd_data[1] 
+//                      |<--a--->|
+//                      |<------- maxCnt -------|
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -24,10 +32,11 @@ module LinearInterpolator(
     input           clk,
     input           reset_n,
     input           run,
-    input           l_din_en,
+    input           l_din_en,      // ignore and just use r_din_en for both channels
     input           r_din_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
+    input [9:0]     sub_sample_cnt,
     output reg      dout_valid,
     output reg [31:0]   l_data_out,
     output reg [31:0]   r_data_out
@@ -35,35 +44,68 @@ module LinearInterpolator(
 
 reg [1:0]   l_snd_data[31:0];
 reg [1:0]   r_snd_data[31:0];
-reg [15:0]  sub_sample_counter, sub_sample_max, l_mult_coef, r_mult_coef;
+reg [15:0]  l_mult_coef, r_mult_coef;
 reg [1:0]   sub_sample_coef[15:0];
-reg         din_stb, din_dly, mult_en, dout_en;
+reg         din_en, din_temp, mult_en, dout_en;
 reg [2:0]   interp_cnt;
 reg [23:0]  l_mult_din, r_mult_din;
 reg [1:0]   l_dout[31:0];
 reg [1:0]   r_dout[31:0];
-reg [9:0]   sample_out_count;
+reg [9:0]   sample_out_count, sub_sample_cnt_coef;
 
 
+parameter sub_sample_max = 10'h1ff;      // divide by 512 (programmabe later?)
 
+// generate din_en, make sure din_en stays low and waits till state machine is inactive
 always @ (posedge clk) begin
-    if (r_din_en) begin
+    if (r_din_en) begin                 // r_din_en is a strobe
+        if (interp_cnt != 0) begin      // if state machine active
+            din_temp <= 1'b1;
+            din_en <= 1'b0;
+        end
+        else begin                      // if state machine idle
+            din_en <= 1'b1;
+            din_temp <= 1'b0;
+        end
+    end
+    else begin  // if !r_din_en
+        if (din_temp) begin
+            if (interp_cnt == 0) begin  // if state machine idle
+                din_en <= 1'b1;
+                din_temp <= 1'b0;
+            end
+            else begin                  // if state machine active
+                din_temp <= din_temp;
+                din_en <= 1'b0;
+            end
+        end
+        else begin  // if din_temp = 0
+            din_temp <= 1'b0;
+            din_en <= 1'b0;
+        end
+    end
+end
+            
+
+// access 2 consecutive samples (l & r)
+// get coefficient from sub sample count
+always @ (posedge clk) begin
+    if (din_en) begin
         r_snd_data[0] <= r_data_in;
         r_snd_data[1] <= r_snd_data[0];
         l_snd_data[0] <= l_data_in;
         l_snd_data[1] <= l_snd_data[0];
-        sub_sample_counter <= 0;
-        sub_sample_max <= sub_sample_counter;
+        sub_sample_cnt_coef <= sub_sample_cnt;
     end
     else begin
         r_snd_data <= r_snd_data;
         l_snd_data <= l_snd_data;
-        sub_sample_max <= sub_sample_max;
-        sub_sample_counter <= sub_sample_counter + 1; 
+        sub_sample_cnt_coef <= sub_sample_cnt_coef; 
     end
     
 end
 
+/
 // generate output sample clk @ 96KHz
 // divide mclk 49.152MHz by 512 to create 96000Hz
 always @ (posedge clk) begin
@@ -71,7 +113,7 @@ always @ (posedge clk) begin
         dout_en <= 1'b0;
         sample_out_count <= 0;
     end
-    else if (sample_out_count == 10'h1ff) begin      // divide by 512
+    else if (sample_out_count == sub_sample_max) begin
         sample_out_count <= 0;
         dout_en <= 1'b1;
     end
@@ -89,14 +131,17 @@ always @ (posedge clk) begin
         0: begin
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
-            if (dout_en) begin
+            if (dout_en) begin  
                 interp_cnt <= 1;
-                sub_sample_coef[1] <= sub_sample_counter;
                 // prevent a negative number
-                if (sub_sample_max > sub_sample_counter)
-                    sub_sample_coef[0] <= sub_sample_max - sub_sample_counter; 
-                else
+                if (sub_sample_max > sub_sample_cnt_coef) begin
+                    sub_sample_coef[0] <= sub_sample_max - sub_sample_cnt_coef; 
+                    sub_sample_coef[1] <= sub_sample_cnt_coef;
+                end
+                else begin
                     sub_sample_coef[0] <= 0;
+                    sub_sample_coef[1] <= sub_sample_max;
+                end
             end
             else begin
                 interp_cnt <= 0;

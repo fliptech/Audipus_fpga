@@ -78,6 +78,8 @@ wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
 wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
+wire [9:0]  sub_sample_cnt;
+
 
 
 /////// audio control register ////////
@@ -129,9 +131,23 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .r_dout_valid   (r_i2sToPcm_valid), // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
     .r_pcm_data     (r_pcm_data),       // [23:0] output
-    .bit_cnt_reg    (i2sToPcm_bit_cnt)  // [7:0] output
+    .bit_cnt_reg    (i2sToPcm_bit_cnt), // [7:0] output
+    .sub_sample_cnt (sub_sample_cnt)    // [9:0] output
 );    
     
+LinearInterpolator i2s_interpolator (
+    .clk                (clk),              // input
+    .reset_n            (reset_n),          // input
+    .run                (audio_enable),     // input
+    .l_din_en           (l_intrp_en),       // input
+    .r_din_en           (r_intrp_en),       // input
+    .l_data_in          (l_intrp_d_in),     // [23:0] input
+    .r_data_in          (r_intrp_d_in),     // [23:0] input
+    .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
+    .dout_valid         (intrp_dout_valid), // output
+    .l_data_out         (l_intrp_d_out),    // [31:0] output
+    .r_data_out         (l_intrp_d_out)     // [31:0] output
+);
 
 FIR_Filters filters (
     .clk                (clk),                  // input
