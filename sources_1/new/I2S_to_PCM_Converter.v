@@ -41,6 +41,7 @@ reg         lrclk_dly;
 reg [2:0]   bclk_shift;
 reg [23:0]  lr_shift_data;
 reg [7:0]   i2s_bit_cnt;
+reg [9:0]   sub_sample_counter;
 
 
 // positive edge bclk detect & enable
@@ -94,7 +95,7 @@ always @ (posedge clk) begin
         r_dout_valid <= 1'b0;
         l_pcm_data <= l_pcm_data;
         r_pcm_data <= r_pcm_data;
-
+    end
 end        
 
             
@@ -108,9 +109,6 @@ always @ (posedge clk) begin
         lr_shift_data <= lr_shift_data;
     end
 end
-
-always @ (posedge clk) begin
-    if (bclk_en && 
 
 
 /* load shifted data                

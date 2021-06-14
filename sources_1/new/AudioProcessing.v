@@ -74,8 +74,10 @@ wire fir_wr_addr_zero, eq_wr_addr_zero;
 wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
 //wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
+wire        l_mux_valid, r_mux_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
+wire [23:0] l_intrp_d_out, r_intrp_d_out;
 wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 wire [9:0]  sub_sample_cnt;
@@ -86,23 +88,21 @@ wire [9:0]  sub_sample_cnt;
 wire audio_enable =     audio_control[0];
 //assign dac_rst =        audio_control[1];
 /////// test control register ////////
-wire dsp_bypass =       test_reg[0];   // [0] routes input i2s directly to output i2s
-wire eq_bypass =        test_reg[1];   // [1] bypasses equalizer (for fir tests)
+wire [1:0] output_sel = test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
 wire output_test_en =   test_reg[2];   // [4] selects a fixed output pattern
-wire sin_test_en =      test_reg[3];   // [3] enable sin wave output
+wire eq_bypass =        test_reg[3];   // [3] bypasses equalizer (for fir tests)
 wire sin_select =       test_reg[4];   // [5] 1=sin wave, 0=triangle wave
 wire test_left =        test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
-// test
-//assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
-//assign test_dout_valid = test_left ? l_mux_en : r_mux_en;
-assign test_data_out = test_left ? l_pcm_data[15:8] : l_pcm_data[16:9];
-assign test_dout_valid = test_left ? l_i2sToPcm_valid : r_i2sToPcm_valid;
+// test from mux
+assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
+assign test_dout_valid = test_left ? l_mux_valid : r_mux_valid;
 
-//////////////////// FIR Bypass Mux ////////////////////////////
+/* 
+/////////////////// FIR Bypass Mux ////////////////////////////
 
 always @ (posedge clk) begin
     if (dsp_bypass) begin
@@ -118,8 +118,8 @@ always @ (posedge clk) begin
         dac_data <= pcmToI2S_data;
     end
 end
-//////////////////////////////////////////////////////////////
-
+/////////////////////////////////////////////////////////////
+*/
 
 I2S_to_PCM_Converter i2s_to_pcm(
     .clk            (clk),              // input
@@ -139,14 +139,14 @@ LinearInterpolator i2s_interpolator (
     .clk                (clk),              // input
     .reset_n            (reset_n),          // input
     .run                (audio_enable),     // input
-    .l_din_en           (l_intrp_en),       // input
-    .r_din_en           (r_intrp_en),       // input
-    .l_data_in          (l_intrp_d_in),     // [23:0] input
-    .r_data_in          (r_intrp_d_in),     // [23:0] input
+    .l_din_en           (l_i2sToPcm_valid),       // input
+    .r_din_en           (l_i2sToPcm_valid),       // input
+    .l_data_in          (l_pcm_data),     // [23:0] input
+    .r_data_in          (r_pcm_data),     // [23:0] input
     .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
     .dout_valid         (intrp_dout_valid), // output
     .l_data_out         (l_intrp_d_out),    // [31:0] output
-    .r_data_out         (l_intrp_d_out)     // [31:0] output
+    .r_data_out         (r_intrp_d_out)     // [31:0] output
 );
 
 FIR_Filters filters (
@@ -161,10 +161,10 @@ FIR_Filters filters (
     .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
     .wr_addr_zero       (fir_wr_addr_zero),     // output
     // input signals
-    .l_data_en          (l_i2sToPcm_valid),     // input enable strobe 
-    .r_data_en          (r_i2sToPcm_valid),     // input enable strobe 
-    .l_data_in          (l_pcm_data),           // [23:0] input
-    .r_data_in          (r_pcm_data),           // [23:0] input
+    .l_data_en          (intrp_dout_valid),     // input enable strobe 
+    .r_data_en          (intrp_dout_valid),     // input enable strobe 
+    .l_data_in          (l_intrp_d_out),           // [23:0] input
+    .r_data_in          (r_intrp_d_out),           // [23:0] input
     // output signals
     .l_data_valid       (l_fir_data_valid),     // output valid strobe
     .r_data_valid       (r_fir_data_valid),     // output valid strobe
@@ -214,21 +214,50 @@ SineWaveGenerator sinGen(
 );
     
 
-//////////////////// sin wave test Mux ////////////////////////////
 
-assign l_mux_out =  sin_test_en ?   wave_out : l_eq_out;
-assign r_mux_out =  sin_test_en ?   wave_out : r_eq_out;
-wire l_mux_en = sin_test_en ?  sin_wave_valid : l_eq_valid;
-wire r_mux_en = sin_test_en ?  sin_wave_valid : r_eq_valid;
-//////////////////////////////////////////////////////////////
+AudioMux aud_outpot_mux(
+    .clk                    (clk),              // input
+    .reset_n                (reset_n),          // input
+    .run                    (audio_enable),     // input
+    .select                 (audio_mux_sel),    // [1:0] input
+    
+    // i2s_To_Pcn to pcm_to_i2s modules
+    .l_i2sToPcm_d_en        (l_i2sToPcm_valid), // input
+    .r_i2sToPcm_d_en        (r_i2sToPcm_valid), // input
+    .l_i2sToPcm_d           (l_pcm_data),       // [23:0] input
+    .r_i2sToPcm_d           (r_pcm_data),       // [23:0] input
+    
+    // interpolator to pcm_to_i2s modules
+    .l_interp_d_en          (intrp_dout_valid), // input
+    .r_interp_d_en          (intrp_dout_valid), // input
+    .l_interp_d             (l_intrp_d_out),    // [23:0] input
+    .r_interp_d             (r_intrp_d_out),    // [23:0] input
+    
+    // test sin wave to pcm_to_i2s modules
+    .sin_wave_d_en          (sin_wave_valid),   // input, for both l & r
+    .sin_wave_d             (wave_out),         // [23:0] input
+    
+    // equalizer to pcm_to_i2s modules
+    .l_eq_d_en              (l_eq_valid),       // input
+    .r_eq_d_en              (l_eq_valid),       // input
+    .l_eq_d                 (l_eq_out),         // [23:0] input
+    .r_eq_d                 (r_eq_out),         // [23:0] input
+    
+    // mux outputs
+    .l_pcmToI2s_d_valid     (l_mux_valid),      // output
+    .r_pcmToI2s_d_valid     (r_mux_valid),      // output
+    .l_pcmToI2s_d           (l_mux_out),        // [23:0] output
+    .r_pcmToI2s_d           (r_mux_out)         // [23:0] output
+);
+
 
 
 PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
     .audio_en       (audio_enable),     // input
     .audio_test     (output_test_en),   // input, selects a fixed pattern
-    .l_data_en      (l_mux_en),         // input
-    .r_data_en      (r_mux_en),         // input
+    .l_data_en      (l_mux_valid),       // input
+    .r_data_en      (r_mux_valid),         // input
     .l_data         (l_mux_out),        // [23:0] input
     .r_data         (r_mux_out),        // [23:0] input
     .bclk           (pcmToI2S_bclk),    // output
@@ -236,7 +265,6 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .i2s_valid      (pcmToI2S_valid),   // output
     .s_data         (pcmToI2S_data)     // output
 );    
-
 
 
 endmodule

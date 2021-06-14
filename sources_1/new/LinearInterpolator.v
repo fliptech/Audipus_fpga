@@ -105,7 +105,7 @@ always @ (posedge clk) begin
     
 end
 
-/
+
 // generate output sample clk @ 96KHz
 // divide mclk 49.152MHz by 512 to create 96000Hz
 always @ (posedge clk) begin

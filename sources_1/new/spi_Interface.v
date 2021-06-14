@@ -81,7 +81,7 @@ reg [6:0] interrupt_reg = 0;
 // STATUS REG
 reg interrupt, rd_strobe_dly; 
 wire [6:0] status_reg;  
-assign status = {interrupt, status_reg}; 
+//assign status = {interrupt, status_reg}; 
 
 //	GENERAL REGISTERS	
 //	Write / Read
