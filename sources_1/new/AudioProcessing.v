@@ -88,15 +88,17 @@ wire [9:0]  sub_sample_cnt;
 wire audio_enable =     audio_control[0];
 //assign dac_rst =        audio_control[1];
 /////// test control register ////////
-wire [1:0] output_sel = test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
-wire output_test_en =   test_reg[2];   // [4] selects a fixed output pattern
-wire eq_bypass =        test_reg[3];   // [3] bypasses equalizer (for fir tests)
-wire sin_select =       test_reg[4];   // [5] 1=sin wave, 0=triangle wave
-wire test_left =        test_reg[5];   // [5] 1=left, 0=right
+wire [1:0] audio_mux_sel =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
+wire output_test_en =       test_reg[2];   // [4] selects a fixed output pattern
+wire eq_bypass =            test_reg[3];   // [3] bypasses equalizer (for fir tests)
+wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
+wire test_left =            test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
+
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
+
 // test from mux
 assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
 assign test_dout_valid = test_left ? l_mux_valid : r_mux_valid;
@@ -221,7 +223,7 @@ AudioMux aud_outpot_mux(
     .run                    (audio_enable),     // input
     .select                 (audio_mux_sel),    // [1:0] input
     
-    // i2s_To_Pcn to pcm_to_i2s modules
+    // i2s_To_Pcm to pcm_to_i2s modules
     .l_i2sToPcm_d_en        (l_i2sToPcm_valid), // input
     .r_i2sToPcm_d_en        (r_i2sToPcm_valid), // input
     .l_i2sToPcm_d           (l_pcm_data),       // [23:0] input

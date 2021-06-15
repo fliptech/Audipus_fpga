@@ -157,7 +157,6 @@ always @ (posedge clk) begin
             r_mult_din <= r_snd_data[0];
             l_mult_coef <= sub_sample_coef[0];
             r_mult_coef <= sub_sample_coef[0];
-            dout_valid <= 1'b0;
         end
         
         2: begin
@@ -193,7 +192,7 @@ always @ (posedge clk) begin
         end
         default: begin
             mult_en <= 1'b0;
-            dout_valid <= 1'b1;
+            dout_valid <= 1'b0;
             interp_cnt <= 0;
             sub_sample_coef <= sub_sample_coef;
         end
