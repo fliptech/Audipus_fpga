@@ -69,6 +69,7 @@ wire pcmToI2S_bclk;
 wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
 wire l_eq_valid, r_eq_valid;
+wire sin_wave_valid, intrp_dout_valid;
 wire fir_wr_addr_zero, eq_wr_addr_zero;
  
 wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
@@ -83,7 +84,6 @@ wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters
 wire [9:0]  sub_sample_cnt;
 
 
-
 /////// audio control register ////////
 wire audio_enable =     audio_control[0];
 //assign dac_rst =        audio_control[1];
@@ -95,13 +95,17 @@ wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
 wire test_left =            test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 
+wire sin_test_en = (test_reg[1:0] == 2'b10);
+
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
 // test from mux
-assign test_data_out = test_left ? l_mux_out[23:16] : r_mux_out[23:16];
-assign test_dout_valid = test_left ? l_mux_valid : r_mux_valid;
+assign test_data_out = test_left ? r_mux_out[15:8] : r_mux_out[23:16];
+//assign test_dout_valid = test_left ? r_mux_valid : r_mux_valid;
+assign test_dout_valid = sin_wave_valid;
+
 
 /* 
 /////////////////// FIR Bypass Mux ////////////////////////////
@@ -241,7 +245,7 @@ AudioMux aud_outpot_mux(
     
     // equalizer to pcm_to_i2s modules
     .l_eq_d_en              (l_eq_valid),       // input
-    .r_eq_d_en              (l_eq_valid),       // input
+    .r_eq_d_en              (r_eq_valid),       // input
     .l_eq_d                 (l_eq_out),         // [23:0] input
     .r_eq_d                 (r_eq_out),         // [23:0] input
     
@@ -258,14 +262,15 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .clk            (clk),              // input
     .audio_en       (audio_enable),     // input
     .audio_test     (output_test_en),   // input, selects a fixed pattern
-    .l_data_en      (l_mux_valid),       // input
-    .r_data_en      (r_mux_valid),         // input
+    .l_data_en      (l_mux_valid),      // input
+    .r_data_en      (r_mux_valid),      // input
     .l_data         (l_mux_out),        // [23:0] input
     .r_data         (r_mux_out),        // [23:0] input
-    .bclk           (pcmToI2S_bclk),    // output
-    .lrclk          (pcmToI2S_lrclk),   // output
-    .i2s_valid      (pcmToI2S_valid),   // output
-    .s_data         (pcmToI2S_data)     // output
+    .bclk           (dac_bclk),         // output
+    .lrclk          (dac_lrclk),        // output
+    .s_data         (dac_data),         // output
+    // for test
+    .i2s_valid      (dac_valid)         // output
 );    
 
 

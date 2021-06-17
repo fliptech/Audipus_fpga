@@ -23,7 +23,7 @@ parameter num_of_in_regs = 4;
 parameter num_of_equalizers = 8;
 
     module AudipusMain (
-        input reset_n,
+//        input reset_n,
         output spi_cs_pcm9211_n,
         output spi_cs_pcm1792_n,
         input spi_cs0_n,
@@ -105,6 +105,7 @@ parameter num_of_filters = 4;
     
     wire    pcmToT2S_valid;   
     
+    wire    reset_n = 1'b1; // temporary until external reset
 
     // status register        
     wire [6:0] status_reg = 
