@@ -146,7 +146,7 @@ LinearInterpolator i2s_interpolator (
     .reset_n            (reset_n),          // input
     .run                (audio_enable),     // input
     .l_din_en           (l_i2sToPcm_valid),       // input
-    .r_din_en           (l_i2sToPcm_valid),       // input
+    .r_din_en           (r_i2sToPcm_valid),       // input
     .l_data_in          (l_pcm_data),     // [23:0] input
     .r_data_in          (r_pcm_data),     // [23:0] input
     .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
