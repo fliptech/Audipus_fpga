@@ -54,12 +54,10 @@ module AudioProcessing #(
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
     // for test
     output          test_dout_valid,
-    output [7:0]    test_data_out
-/*  // for sin test
-    output          sin_clken, 
-    output          sin_data_valid, 
-    output          sin_data_ready
-*/             
+    output [7:0]    test_data_out,
+  // for sin test
+    output [2:0]    interp_cnt        //  output, 
+           
 );
 
 // sets clk delays between audio_en and X_pcm_d_en
@@ -78,15 +76,16 @@ wire        l_fir_data_valid, r_fir_data_valid;
 wire        l_mux_valid, r_mux_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
-wire [23:0] l_intrp_d_out, r_intrp_d_out;
+wire [33:0] l_intrp_d_out, r_intrp_d_out;
 wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 wire [9:0]  sub_sample_cnt;
+wire [7:0] interp_test_d;
 
 
 /////// audio control register ////////
 wire audio_enable =     audio_control[0];
-//assign dac_rst =        audio_control[1];
+wire [1:0] test_d_select =  audio_control[2:1];
 /////// test control register ////////
 wire [1:0] audio_mux_sel =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
 wire output_test_en =       test_reg[2];   // [4] selects a fixed output pattern
@@ -102,9 +101,9 @@ assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
 // test from mux
-assign test_data_out = test_left ? r_mux_out[15:8] : r_mux_out[23:16];
-//assign test_dout_valid = test_left ? r_mux_valid : r_mux_valid;
-assign test_dout_valid = sin_wave_valid;
+assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
+assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
+//assign test_dout_valid = sin_wave_valid;
 
 
 /* 
@@ -151,8 +150,12 @@ LinearInterpolator i2s_interpolator (
     .r_data_in          (r_pcm_data),     // [23:0] input
     .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
     .dout_valid         (intrp_dout_valid), // output
-    .l_data_out         (l_intrp_d_out),    // [31:0] output
-    .r_data_out         (r_intrp_d_out)     // [31:0] output
+    .l_data_out         (l_intrp_d_out),    // [33:0] output
+    .r_data_out         (r_intrp_d_out),     // [33:0] output
+    .interp_cnt         (interp_cnt),        // [2:0] output
+    // for test
+    .test_d_select      (test_d_select),     // audio_control[2:1]
+    .test_data          (interp_test_d)     // [7:0] output
 );
 
 FIR_Filters filters (
@@ -169,8 +172,8 @@ FIR_Filters filters (
     // input signals
     .l_data_en          (intrp_dout_valid),     // input enable strobe 
     .r_data_en          (intrp_dout_valid),     // input enable strobe 
-    .l_data_in          (l_intrp_d_out),           // [23:0] input
-    .r_data_in          (r_intrp_d_out),           // [23:0] input
+    .l_data_in          (l_intrp_d_out[33:10]),           // [23:0] input
+    .r_data_in          (r_intrp_d_out[33:10]),           // [23:0] input
     // output signals
     .l_data_valid       (l_fir_data_valid),     // output valid strobe
     .r_data_valid       (r_fir_data_valid),     // output valid strobe
@@ -221,7 +224,7 @@ SineWaveGenerator sinGen(
     
 
 
-AudioMux aud_outpot_mux(
+AudioMux aud_output_mux(
     .clk                    (clk),              // input
     .reset_n                (reset_n),          // input
     .run                    (audio_enable),     // input
@@ -236,8 +239,8 @@ AudioMux aud_outpot_mux(
     // interpolator to pcm_to_i2s modules
     .l_interp_d_en          (intrp_dout_valid), // input
     .r_interp_d_en          (intrp_dout_valid), // input
-    .l_interp_d             (l_intrp_d_out),    // [23:0] input
-    .r_interp_d             (r_intrp_d_out),    // [23:0] input
+    .l_interp_d             (l_intrp_d_out[33:10]),    // [23:0] input
+    .r_interp_d             (r_intrp_d_out[33:10]),    // [23:0] input
     
     // test sin wave to pcm_to_i2s modules
     .sin_wave_d_en          (sin_wave_valid),   // input, for both l & r

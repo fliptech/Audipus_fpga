@@ -112,6 +112,8 @@ always @ (posedge clk) begin
     end
 end
 
+// ADD BARREL SHIFT
+
 /* load shifted data                
 always @ (posedge clk) begin
     if(bclk_en) begin

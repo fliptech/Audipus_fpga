@@ -158,7 +158,8 @@ parameter num_of_filters = 4;
          
      // for test
     wire        test_dout_valid;
-    wire [7:0]  test_wave;   
+    wire [7:0]  test_wave; 
+    wire [2:0]  interp_cnt;  
      
     
     ClockGeneration system_clks (
@@ -265,14 +266,11 @@ parameter num_of_filters = 4;
         .i2sToPcm_bit_cnt   (i2sToPcm_bit_reg),
         // test
         .test_dout_valid    (test_dout_valid),
-        .test_data_out      (test_data_out)
- /* for sin test
-        .sin_clken          (test[3]), 
-        .sin_data_valid     (test[6]), 
-        .sin_data_ready     (test[7])
-*/        
-        
+        .test_data_out      (test_data_out),
+ // for sin test
+        .interp_cnt          (interp_cnt)         
     );
+
 
     PCM9211_mpio_Interface mpio (
         .mpio_control   (mpio_control_reg),     // input[1:0]
@@ -306,9 +304,9 @@ parameter num_of_filters = 4;
 //    assign test[15:13] = ;
 */ 
 // I2S Test
-    assign test[3:0] = {pcm9211_i2s_sclk, dac_data, dac_lrclk, dac_bclk};
+    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
+    assign test[5:3] = interp_cnt;
              
-    assign test[4] = pcmToI2S_valid;
     assign test[6] = test_dout_valid;
     assign test [15:8] = test_data_out;
     

@@ -39,19 +39,23 @@ module LinearInterpolator(
     input [9:0]     sub_sample_cnt,
     output reg      dout_valid,
     output [33:0]   l_data_out,
-    output [33:0]   r_data_out
+    output [33:0]   r_data_out,
+    // for test
+    output reg [2:0]   interp_cnt,
+    input [1:0]     test_d_select,
+    output [7:0]    test_data 
 );
 
-reg [1:0]   l_snd_data[31:0];
-reg [1:0]   r_snd_data[31:0];
+reg [1:0]   l_snd_data[23:0];
+reg [1:0]   r_snd_data[23:0];
 reg [9:0]   mult_coef;
 reg [1:0]   sub_sample_coef[9:0];
 reg         din_en, din_temp, mult_en, dout_en, coef_sub_en, adder_en;
-reg [2:0]   interp_cnt;
+// reg [2:0]   interp_cnt;
 reg [23:0]  l_mult_din, r_mult_din;
 reg [33:0]  l_mult_dout, r_mult_dout;
-reg [1:0]   l_dout[31:0];
-reg [1:0]   r_dout[31:0];
+reg [1:0]   l_dout[32:0];
+reg [1:0]   r_dout[32:0];
 reg [9:0]   sample_out_count, sub_sample_cnt_coef;
 reg [10:0]  sub_sample_result;
 
@@ -145,6 +149,7 @@ always @ (posedge clk) begin
             end
         end
         1: begin
+            interp_cnt <= 2;
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             // prevent a negative number
@@ -153,10 +158,9 @@ always @ (posedge clk) begin
                 sub_sample_coef[1] <= sub_sample_max;
             end
             else begin
-                sub_sample_coef[0] <= sub_sample_result[9:0]; 
-                sub_sample_coef[1] <= sub_sample_cnt_coef;
+                sub_sample_coef[0] <= sub_sample_result[9:0];   // 1 - a 
+                sub_sample_coef[1] <= sub_sample_cnt_coef;      // a
             end
-//            end
         end
             
         2: begin
@@ -181,16 +185,16 @@ always @ (posedge clk) begin
             interp_cnt <= 5;
             mult_en <= 1'b1;
             dout_valid <= 1'b0;
-            l_dout[0] <= l_mult_dout;
-            r_dout[0] <= r_mult_dout;
+            l_dout[0] <= l_mult_dout[33:1];
+            r_dout[0] <= r_mult_dout[33:1];
         end
         5: begin
             interp_cnt <= 6;
             mult_en <= 1'b0;
             adder_en <= 1'b1;
             dout_valid <= 1'b0;
-            l_dout[1] <= l_mult_dout;
-            r_dout[1] <= r_mult_dout;
+            l_dout[1] <= l_mult_dout[33:1];
+            r_dout[1] <= r_mult_dout[33:1];
         end         
         6: begin
             interp_cnt <= 0;
@@ -250,6 +254,14 @@ Interpolator_adder r_interp_add (
   .CE           (add_en),               // input wire CE
   .S            (r_data_out)            // output wire [33 : 0] S
 );
+
+assign test_data[7:0] = (test_d_select == 0) ?  r_data_in [7:0]:
+                        (test_d_select == 1) ?  r_data_in[15:8] :
+                        (test_d_select == 2) ?  r_data_in[23:16] :
+//                    (test_d_select == 1) ?  {14'h0000, mult_coef} :
+//                    (test_d_select == 2) ?  l_mult_dout[33:10] :
+                                                8'h55;
+//                                                r_mult_dout[33:10];
 
 
 endmodule
