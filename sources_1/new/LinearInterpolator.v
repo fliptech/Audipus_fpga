@@ -43,7 +43,7 @@ module LinearInterpolator(
     // for test
     output reg [2:0]   interp_cnt,
     input [1:0]     test_d_select,
-    output [7:0]    test_data 
+    output [15:0]    test_data 
 );
 
 reg [1:0]   l_snd_data[23:0];
@@ -255,13 +255,13 @@ Interpolator_adder r_interp_add (
   .S            (r_data_out)            // output wire [33 : 0] S
 );
 
-assign test_data[7:0] = (test_d_select == 0) ?  r_data_in [7:0]:
-                        (test_d_select == 1) ?  r_data_in[15:8] :
-                        (test_d_select == 2) ?  r_data_in[23:16] :
-//                    (test_d_select == 1) ?  {14'h0000, mult_coef} :
-//                    (test_d_select == 2) ?  l_mult_dout[33:10] :
-                                                8'h55;
-//                                                r_mult_dout[33:10];
 
+//      TEST
+
+
+assign test_data =      (test_d_select == 0) ?  r_data_in[15:0] :
+                        (test_d_select == 1) ?  r_data_in[23:8] :
+                        (test_d_select == 2) ?  l_data_in[15:0] :
+                                                l_data_in[23:8];
 
 endmodule

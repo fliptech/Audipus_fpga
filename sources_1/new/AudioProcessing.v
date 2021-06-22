@@ -54,7 +54,7 @@ module AudioProcessing #(
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
     // for test
     output          test_dout_valid,
-    output [7:0]    test_data_out,
+    output [15:0]   test_data_out,
   // for sin test
     output [2:0]    interp_cnt        //  output, 
            
@@ -80,7 +80,7 @@ wire [33:0] l_intrp_d_out, r_intrp_d_out;
 wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 wire [9:0]  sub_sample_cnt;
-wire [7:0] interp_test_d;
+wire [15:0] interp_test_d;
 
 
 /////// audio control register ////////
@@ -101,10 +101,10 @@ assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
 // test from mux
-assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
-assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
-//assign test_dout_valid = sin_wave_valid;
-
+//assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
+//assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
+assign test_dout_valid = l_i2sToPcm_valid;
+assign test_data_out = test_left ? l_pcm_data[23:8] : l_pcm_data[15:0];
 
 /* 
 /////////////////// FIR Bypass Mux ////////////////////////////
@@ -155,7 +155,7 @@ LinearInterpolator i2s_interpolator (
     .interp_cnt         (interp_cnt),        // [2:0] output
     // for test
     .test_d_select      (test_d_select),     // audio_control[2:1]
-    .test_data          (interp_test_d)     // [7:0] output
+    .test_data          (interp_test_d)     // [15:0] output
 );
 
 FIR_Filters filters (

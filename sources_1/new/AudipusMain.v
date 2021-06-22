@@ -117,7 +117,8 @@ parameter num_of_filters = 4;
          pcm9211_int1, pcm9211_int0}; 
  
     
-    wire [7:0]   sram_control_reg, i2sToPcm_bit_reg, test_data_out;
+    wire [7:0]  sram_control_reg, i2sToPcm_bit_reg; 
+    wire [15:0] test_data_out;
     
     wire        spi_rd_stb, spi_wr_stb;
     
@@ -304,14 +305,18 @@ parameter num_of_filters = 4;
 //    assign test[15:13] = ;
 */ 
 // I2S Test
-    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
-    assign test[5:3] = interp_cnt;
-             
-    assign test[6] = test_dout_valid;
-    assign test [15:8] = test_data_out;
+//    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
+    assign test[2:0] = {pcm9211_i2s_d, pcm9211_i2s_lrclk, pcm9211_i2s_bclk};
+    assign test[3] = test_dout_valid;
+    assign test [15:4] = test_data_out[11:0];
     
+//    assign test[5:3] = interp_cnt;
+ /*            
+    assign test [15:0] = test_data_out;
+ */    
+    assign test[16] = test_dout_valid;  // clk qualifier
     assign test[17] = clk;      
- 
+
             
     
   

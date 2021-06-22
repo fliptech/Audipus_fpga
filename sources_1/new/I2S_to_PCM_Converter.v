@@ -48,7 +48,7 @@ reg [9:0]   sub_sample_counter;
 always @ (posedge clk) begin
     bclk_shift[0] <= bclk;
     bclk_shift[2:1] <= bclk_shift[1:0];
-    if (bclk_shift == 3'b001) 
+    if (bclk_shift == 3'b011) 
         bclk_en <= 1'b1;
     else
         bclk_en <= 1'b0;
