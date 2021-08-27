@@ -104,7 +104,7 @@ assign audio_status[1]  = eq_wr_addr_zero;
 //assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
 //assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
 assign test_dout_valid = l_i2sToPcm_valid;
-assign test_data_out = test_left ? l_pcm_data[23:8] : l_pcm_data[15:0];
+assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
 
 /* 
 /////////////////// FIR Bypass Mux ////////////////////////////

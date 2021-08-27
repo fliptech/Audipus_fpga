@@ -32,8 +32,7 @@ module I2S_to_PCM_Converter # (
     output reg          r_dout_valid,       // strobe
     output reg [23:0]   l_pcm_data,
     output reg [23:0]   r_pcm_data,
-    output reg [7:0]    bit_cnt_reg,        // number of bits in a l or r sample
-    output reg [9:0]    sub_sample_cnt      // number of mclks between 2 samples
+    output reg [7:0]    bit_cnt_reg        // number of bits in a l or r sample
 );
 
 reg         bclk_en;
@@ -97,18 +96,6 @@ always @ (posedge clk) begin
     end
     else begin
         lr_shift_data <= lr_shift_data;
-    end
-end
-
-// sub sample counter
-always @ (posedge clk) begin
-    if(bclk_en && !lrclk_dly && lrclk) begin    // start/end of a sample
-        sub_sample_counter <= 0;
-        sub_sample_cnt <= sub_sample_counter;
-    end
-    else begin
-        sub_sample_counter <= sub_sample_counter + 1;        
-        sub_sample_cnt <= sub_sample_cnt;
     end
 end
 

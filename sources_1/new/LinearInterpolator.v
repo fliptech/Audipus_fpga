@@ -36,12 +36,12 @@ module LinearInterpolator(
     input           r_din_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
-    input [9:0]     sub_sample_cnt,
+ //   input [9:0]     sub_sample_cnt,
     output reg      dout_valid,
     output [33:0]   l_data_out,
     output [33:0]   r_data_out,
     // for test
-    output reg [2:0]   interp_cnt,
+    output reg [2:0]   interp_state,
     input [1:0]     test_d_select,
     output [15:0]    test_data 
 );
@@ -56,16 +56,29 @@ reg [23:0]  l_mult_din, r_mult_din;
 reg [33:0]  l_mult_dout, r_mult_dout;
 reg [1:0]   l_dout[32:0];
 reg [1:0]   r_dout[32:0];
-reg [9:0]   sample_out_count, sub_sample_cnt_coef;
-reg [10:0]  sub_sample_result;
+reg [9:0]   sample_out_count, sub_sample_counter, sub_sample_cnt_coef;
+reg [10:0]  sub_sample_result, sample_96KHz_count;
 
 
-parameter sub_sample_max = 10'h1ff;      // divide by 512 (programmabe later?)
+parameter sub_sample_max = 10'h1ff;      // divide by 512 for 96KHz (programmabe later?)
+
+
+// sub sample counter
+always @ (posedge clk) begin
+    if(r_din_en) begin              // start/end of a sample
+        sub_sample_counter <= 0;
+    end
+    else begin
+        sub_sample_counter <= sub_sample_counter + 1;        
+    end
+end
+
+
 
 // generate din_en, make sure din_en stays low and waits till state machine is inactive
 always @ (posedge clk) begin
     if (r_din_en) begin                 // r_din_en is a strobe
-        if (interp_cnt != 0) begin      // if state machine active
+        if (interp_state != 0) begin      // if state machine active
             din_temp <= 1'b1;
             din_en <= 1'b0;
         end
@@ -76,7 +89,7 @@ always @ (posedge clk) begin
     end
     else begin  // if !r_din_en
         if (din_temp) begin
-            if (interp_cnt == 0) begin  // if state machine idle
+            if (interp_state == 0) begin  // if state machine idle
                 din_en <= 1'b1;
                 din_temp <= 1'b0;
             end
@@ -101,7 +114,7 @@ always @ (posedge clk) begin
         r_snd_data[1] <= r_snd_data[0];
         l_snd_data[0] <= l_data_in;
         l_snd_data[1] <= l_snd_data[0];
-        sub_sample_cnt_coef <= sub_sample_cnt;
+        sub_sample_cnt_coef <= sub_sample_counter;
     end
     else begin
         r_snd_data <= r_snd_data;
@@ -117,14 +130,14 @@ end
 always @ (posedge clk) begin
     if (!run) begin
         dout_en <= 1'b0;
-        sample_out_count <= 0;
+        sample_96KHz_count <= 0;
     end
-    else if (sample_out_count == sub_sample_max) begin
-        sample_out_count <= 0;
+    else if (sample_96KHz_count == sub_sample_max) begin
+        sample_96KHz_count <= 0;
         dout_en <= 1'b1;
     end
     else begin
-        sample_out_count <= sample_out_count + 1;
+        sample_96KHz_count <= sample_96KHz_count + 1;
         dout_en <= 1'b0;
     end
 end
@@ -133,23 +146,23 @@ end
 
 // Interpolatator State Machine
 always @ (posedge clk) begin
-    case (interp_cnt)
+    case (interp_state)
         0: begin
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             sub_sample_coef <= sub_sample_coef;
             
             if (dout_en) begin  
-                interp_cnt <= 1;
+                interp_state <= 1;
                 coef_sub_en <= 1;
             end
             else begin
-                interp_cnt <= 0;
+                interp_state <= 0;
                 coef_sub_en <= 0;
             end
         end
         1: begin
-            interp_cnt <= 2;
+            interp_state <= 2;
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             // prevent a negative number
@@ -164,7 +177,7 @@ always @ (posedge clk) begin
         end
             
         2: begin
-            interp_cnt <= 3;
+            interp_state <= 3;
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             l_mult_din <= l_snd_data[0];
@@ -173,7 +186,7 @@ always @ (posedge clk) begin
         end
         
         3: begin
-            interp_cnt <= 4;
+            interp_state <= 4;
             mult_en <= 1'b1;
             dout_valid <= 1'b0;
             l_mult_din <= l_snd_data[1];
@@ -182,14 +195,14 @@ always @ (posedge clk) begin
            
         end    
         4: begin
-            interp_cnt <= 5;
+            interp_state <= 5;
             mult_en <= 1'b1;
             dout_valid <= 1'b0;
             l_dout[0] <= l_mult_dout[33:1];
             r_dout[0] <= r_mult_dout[33:1];
         end
         5: begin
-            interp_cnt <= 6;
+            interp_state <= 6;
             mult_en <= 1'b0;
             adder_en <= 1'b1;
             dout_valid <= 1'b0;
@@ -197,7 +210,7 @@ always @ (posedge clk) begin
             r_dout[1] <= r_mult_dout[33:1];
         end         
         6: begin
-            interp_cnt <= 0;
+            interp_state <= 0;
             mult_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b1;            
@@ -206,7 +219,7 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            interp_cnt <= 0;
+            interp_state <= 0;
             sub_sample_coef <= sub_sample_coef;
         end
     endcase
