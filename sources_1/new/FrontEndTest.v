@@ -38,7 +38,7 @@ module FrontEndTest(
 parameter SmpRate_192KHz = 6'hff;   //   256
 parameter SmpRate_96KHz = 6'h1ff;   //   512
 parameter SmpRate_48KHz = 6'h3ff;   //  1024
-parameter SmpRate_44_1KHz = 6'h45a; //  1115
+parameter SmpRate_44_1KHz = 6'h45a; //  1115 -> 0x458
 parameter SmpRate_88_2KHz = 6'h22c; //   557
 
 parameter numOfBits = 24;
@@ -56,20 +56,20 @@ reg [2:0] sin_clken_count;
 assign l_pcm_data = triangle_count;
 assign r_pcm_data = triangle_count;
 
-wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};
+wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};  // = mclk/sample_rate
 
 
 assign l_dout_valid = data_valid; 
 assign r_dout_valid = data_valid; 
 
 // create the test sample clk strobe datavalid
-// divide mclk 49.152MHz by X to create the SampleRate via clken
+// divide mclk 49.152MHz by smp_rate_divide to create the SampleRate via clken
 always @ (posedge clk) begin
     if (!run) begin
         data_valid <= 1'b0;
         sin_clken_count <= 0;
     end
-    else if (sin_clken_count == smp_rate_divide) begin      // divide by 8
+    else if (sin_clken_count == smp_rate_divide) begin      // sample_rate = mclk/smp_rate_divide
         sin_clken_count <= 0;
         data_valid <= 1'b1;
     end

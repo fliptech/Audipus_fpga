@@ -21,8 +21,8 @@
 //
 //                           InterpValue
 //                               V
-//                      X--------|--------------X               >> time
-//               snd_data[0]                snd_data[1] 
+//                      X--------|--------------X               >> time, X = input sample points
+//               snd_data[0]                snd_data[1]         >> V = 96KHz sample points
 //                      |<--a--->|
 //                      |<------- maxCnt -------|
 //////////////////////////////////////////////////////////////////////////////////
@@ -48,81 +48,22 @@ module LinearInterpolator(
 
 reg [1:0]   l_snd_data[23:0];
 reg [1:0]   r_snd_data[23:0];
+reg [1:0]   l_intrp_data[23:0];
+reg [1:0]   r_intrp_data[23:0];
+reg [1:0]   intrp_coef[9:0];
 reg [9:0]   mult_coef;
-reg [1:0]   sub_sample_coef[9:0];
-reg         din_en, din_temp, mult_en, dout_en, coef_sub_en, adder_en;
+reg         mult_en, dout_en, coef_sub_en, adder_en;
 // reg [2:0]   interp_cnt;
 reg [23:0]  l_mult_din, r_mult_din;
 reg [33:0]  l_mult_dout, r_mult_dout;
 reg [1:0]   l_dout[32:0];
 reg [1:0]   r_dout[32:0];
-reg [9:0]   sample_out_count, sub_sample_counter, sub_sample_cnt_coef;
+reg [9:0]   sub_sample_count, sub_sample_counter, intrp_sub_sample;
 reg [10:0]  sub_sample_result, sample_96KHz_count;
 
 
 parameter sub_sample_max = 10'h1ff;      // divide by 512 for 96KHz (programmabe later?)
 
-
-// sub sample counter
-always @ (posedge clk) begin
-    if(r_din_en) begin              // start/end of a sample
-        sub_sample_counter <= 0;
-    end
-    else begin
-        sub_sample_counter <= sub_sample_counter + 1;        
-    end
-end
-
-
-
-// generate din_en, make sure din_en stays low and waits till state machine is inactive
-always @ (posedge clk) begin
-    if (r_din_en) begin                 // r_din_en is a strobe
-        if (interp_state != 0) begin      // if state machine active
-            din_temp <= 1'b1;
-            din_en <= 1'b0;
-        end
-        else begin                      // if state machine idle
-            din_en <= 1'b1;
-            din_temp <= 1'b0;
-        end
-    end
-    else begin  // if !r_din_en
-        if (din_temp) begin
-            if (interp_state == 0) begin  // if state machine idle
-                din_en <= 1'b1;
-                din_temp <= 1'b0;
-            end
-            else begin                  // if state machine active
-                din_temp <= din_temp;
-                din_en <= 1'b0;
-            end
-        end
-        else begin  // if din_temp = 0
-            din_temp <= 1'b0;
-            din_en <= 1'b0;
-        end
-    end
-end
-            
-
-// access 2 consecutive samples (l & r)
-// get coefficient from sub sample count
-always @ (posedge clk) begin
-    if (din_en) begin
-        r_snd_data[0] <= r_data_in;
-        r_snd_data[1] <= r_snd_data[0];
-        l_snd_data[0] <= l_data_in;
-        l_snd_data[1] <= l_snd_data[0];
-        sub_sample_cnt_coef <= sub_sample_counter;
-    end
-    else begin
-        r_snd_data <= r_snd_data;
-        l_snd_data <= l_snd_data;
-        sub_sample_cnt_coef <= sub_sample_cnt_coef; 
-    end
-    
-end
 
 
 // generate output sample clk @ 96KHz
@@ -142,7 +83,41 @@ always @ (posedge clk) begin
     end
 end
 
+// Capture Input Data
+// access 2 consecutive samples (l & r) and sub_sample count
+// get coefficient from sub sample count
+always @ (posedge clk) begin
+    if(r_din_en) begin              // start/end of a sample
+        sub_sample_counter <= 0;
+        r_snd_data[0] <= r_data_in;
+        r_snd_data[1] <= r_snd_data[0];
+        l_snd_data[0] <= l_data_in;
+        l_snd_data[1] <= l_snd_data[0];
+        sub_sample_count <= sub_sample_counter;
+    end
+    else begin
+        sub_sample_counter <= sub_sample_counter + 1;        
+        r_snd_data <= r_snd_data;
+        l_snd_data <= l_snd_data;
+        sub_sample_count <= sub_sample_count; 
+    end
+end           
 
+// Hold Input Data if State Machine Active
+always @ (posedge clk) begin
+    if(interp_state == 0) begin              // 
+        l_intrp_data <= l_snd_data;
+        r_intrp_data <= r_snd_data;
+        intrp_sub_sample <= sub_sample_count;
+    end
+    else begin
+        l_intrp_data <= l_intrp_data;
+        r_intrp_data <= r_intrp_data;
+        intrp_sub_sample <= intrp_sub_sample;
+    end
+end
+
+    
 
 // Interpolatator State Machine
 always @ (posedge clk) begin
@@ -150,7 +125,7 @@ always @ (posedge clk) begin
         0: begin
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
-            sub_sample_coef <= sub_sample_coef;
+            intrp_coef <= intrp_coef;
             
             if (dout_en) begin  
                 interp_state <= 1;
@@ -167,12 +142,12 @@ always @ (posedge clk) begin
             dout_valid <= 1'b0;
             // prevent a negative number
             if (sub_sample_result[10]) begin // if the result is negative
-                sub_sample_coef[0] <= 0;
-                sub_sample_coef[1] <= sub_sample_max;
+                intrp_coef[0] <= 0;
+                intrp_coef[1] <= sub_sample_max;
             end
             else begin
-                sub_sample_coef[0] <= sub_sample_result[9:0];   // 1 - a 
-                sub_sample_coef[1] <= sub_sample_cnt_coef;      // a
+                intrp_coef[0] <= sub_sample_result[9:0];    // 1 - a 
+                intrp_coef[1] <= intrp_sub_sample;          // a
             end
         end
             
@@ -180,18 +155,18 @@ always @ (posedge clk) begin
             interp_state <= 3;
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
-            l_mult_din <= l_snd_data[0];
-            r_mult_din <= r_snd_data[0];
-            mult_coef <= sub_sample_coef[0];
+            l_mult_din <= l_intrp_data[0];
+            r_mult_din <= r_intrp_data[0];
+            mult_coef <= intrp_coef[0];
         end
         
         3: begin
             interp_state <= 4;
             mult_en <= 1'b1;
             dout_valid <= 1'b0;
-            l_mult_din <= l_snd_data[1];
-            r_mult_din <= r_snd_data[1];
-            mult_coef <= sub_sample_coef[1];
+            l_mult_din <= l_intrp_data[1];
+            r_mult_din <= r_intrp_data[1];
+            mult_coef <= intrp_coef[1];
            
         end    
         4: begin
@@ -220,7 +195,7 @@ always @ (posedge clk) begin
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
             interp_state <= 0;
-            sub_sample_coef <= sub_sample_coef;
+            intrp_coef <= intrp_coef;
         end
     endcase
 end
@@ -228,7 +203,7 @@ end
 
 interpolator_subtractor l_interp_sub (
     .A            (sub_sample_max),         // input wire [9 : 0] A
-    .B            (sub_sample_cnt_coef),    // input wire [9 : 0] B
+    .B            (intrp_sub_sample),       // input wire [9 : 0] B
     .CLK          (clk),                    // input wire CLK
     .CE           (coef_sub_en),            // input wire CE
     .S            (sub_sample_result)       // output wire [10 : 0] S
