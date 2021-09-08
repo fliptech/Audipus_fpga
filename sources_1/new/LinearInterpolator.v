@@ -17,15 +17,19 @@
 // Revision 0.01 - File Created
 //
 // Additional Comments:
-//  Interpolation formular: InterpValue = snd_data[0]*(maxCnt - smplCnt) + snd_data[1]*(smplCnt)
+//  Interpolation formular: InterpValue = snd_data[1]*(maxCnt - smplCnt) + snd_data[0]*(smplCnt)
+//                          InterpValue = snd_data[1]*(sub_sample_count - intrp_sub_sample) + snd_data[0]*intrp_sub_sample
+//
 //
 //                           InterpValue
 //                               V
 //                      X--------|--------------X               >> time, X = input sample points
-//               snd_data[0]                snd_data[1]         >> V = 96KHz sample points
+//               snd_data[1]                snd_data[0]         >> V = 96KHz sample points
 //                      |<--a--->|
 //                      |<------- maxCnt -------|
 //////////////////////////////////////////////////////////////////////////////////
+//
+//      
 
 
 module LinearInterpolator(
@@ -58,62 +62,68 @@ reg [23:0]  l_mult_din, r_mult_din;
 reg [33:0]  l_mult_dout, r_mult_dout;
 reg [1:0]   l_dout[32:0];
 reg [1:0]   r_dout[32:0];
-reg [9:0]   sub_sample_count, sub_sample_counter, intrp_sub_sample;
-reg [10:0]  sub_sample_result, sample_96KHz_count;
+reg [9:0]   input_max_sample_count, input_sample_count, input_sample_counter; 
+reg [9:0]   intrp_input_count, intrp_input_max_count;
+reg [10:0]  sample_1_coef, sample_96KHz_count;
 
 
-parameter sub_sample_max = 10'h1ff;      // divide by 512 for 96KHz (programmabe later?)
+parameter sample_96KHz_max = 10'h1ff;      // divide by 512 for 96KHz (programmabe later?)
 
 
 
-// generate output sample clk @ 96KHz
-// divide mclk 49.152MHz by 512 to create 96000Hz
+// generate System sample clk @ 96KHz
+// divide mclk 49.152MHz by sample_96KHz_max (512) to create 96000Hz
 always @ (posedge clk) begin
     if (!run) begin
         dout_en <= 1'b0;
         sample_96KHz_count <= 0;
+        input_sample_count <= 0;
     end
-    else if (sample_96KHz_count == sub_sample_max) begin
+    else if (sample_96KHz_count == sample_96KHz_max) begin
         sample_96KHz_count <= 0;
         dout_en <= 1'b1;
+        input_sample_count <= input_sample_counter;     // hold count value at the 96KHz sample
     end
     else begin
         sample_96KHz_count <= sample_96KHz_count + 1;
         dout_en <= 1'b0;
+        input_sample_count <= input_sample_count;
     end
 end
 
 // Capture Input Data
-// access 2 consecutive samples (l & r) and sub_sample count
+// access 2 consecutive samples (l & r) and sub_sample count between the 2 samples
 // get coefficient from sub sample count
 always @ (posedge clk) begin
-    if(r_din_en) begin              // start/end of a sample
-        sub_sample_counter <= 0;
+    if(r_din_en) begin              // strobe, start/end of a sample
+        input_sample_counter <= 0;
         r_snd_data[0] <= r_data_in;
         r_snd_data[1] <= r_snd_data[0];
         l_snd_data[0] <= l_data_in;
         l_snd_data[1] <= l_snd_data[0];
-        sub_sample_count <= sub_sample_counter;
+        input_max_sample_count <= input_sample_counter;
     end
     else begin
-        sub_sample_counter <= sub_sample_counter + 1;        
+        input_sample_counter <= input_sample_counter + 1;        
         r_snd_data <= r_snd_data;
         l_snd_data <= l_snd_data;
-        sub_sample_count <= sub_sample_count; 
+        input_max_sample_count <= input_max_sample_count; 
     end
 end           
 
 // Hold Input Data if State Machine Active
 always @ (posedge clk) begin
-    if(interp_state == 0) begin              // 
+    if(interp_state == 0) begin               
         l_intrp_data <= l_snd_data;
         r_intrp_data <= r_snd_data;
-        intrp_sub_sample <= sub_sample_count;
+        intrp_input_count <= input_sample_count;            // 96KHz position relative to input sample  (a)
+        intrp_input_max_count <= input_max_sample_count;    // total mclks between input samples        (1)
     end
     else begin
         l_intrp_data <= l_intrp_data;
         r_intrp_data <= r_intrp_data;
-        intrp_sub_sample <= intrp_sub_sample;
+        intrp_input_count <= intrp_input_count;
+        intrp_input_max_count <= intrp_input_max_count;
     end
 end
 
@@ -129,7 +139,7 @@ always @ (posedge clk) begin
             
             if (dout_en) begin  
                 interp_state <= 1;
-                coef_sub_en <= 1;
+                coef_sub_en <= 1;       // enable subtractor
             end
             else begin
                 interp_state <= 0;
@@ -141,13 +151,13 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             // prevent a negative number
-            if (sub_sample_result[10]) begin // if the result is negative
-                intrp_coef[0] <= 0;
-                intrp_coef[1] <= sub_sample_max;
+            if (sample_1_coef[10]) begin // if the result is negative, then a = intrp_input_max_count
+                intrp_coef[1] <= 0;                         // a-a=0
+                intrp_coef[0] <= intrp_input_max_count;     // a=1
             end
             else begin
-                intrp_coef[0] <= sub_sample_result[9:0];    // 1 - a 
-                intrp_coef[1] <= intrp_sub_sample;          // a
+                intrp_coef[1] <= sample_1_coef[9:0];        // subtracter result:  1 - a 
+                intrp_coef[0] <= intrp_input_count;         // max input samples:  a
             end
         end
             
@@ -202,11 +212,11 @@ end
                 
 
 interpolator_subtractor l_interp_sub (
-    .A            (sub_sample_max),         // input wire [9 : 0] A
-    .B            (intrp_sub_sample),       // input wire [9 : 0] B
+    .A            (intrp_input_max_count),  // input wire [9 : 0] A
+    .B            (intrp_input_count),      // input wire [9 : 0] B
     .CLK          (clk),                    // input wire CLK
     .CE           (coef_sub_en),            // input wire CE
-    .S            (sub_sample_result)       // output wire [10 : 0] S
+    .S            (sample_1_coef)           // output wire [10 : 0] S
 );
 
                 
