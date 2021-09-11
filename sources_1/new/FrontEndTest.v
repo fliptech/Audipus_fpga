@@ -23,8 +23,8 @@
 module FrontEndTest(
     input               clk,
     input               run,
-    input [7:0]         smp_rate_divide_lsb,    // sets the sample rate of the test triangle waveform
-    input [7:0]         smp_rate_divide_msb,
+//    input [7:0]         smp_rate_divide_lsb,    // sets the sample rate of the test triangle waveform
+//    input [7:0]         smp_rate_divide_msb,
     input [7:0]         triangle_incrmnt,       // msb only, lsb set to 0s, sets the slope of the triangle based on num_of_bits and smp_rate
  // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
      
@@ -56,7 +56,8 @@ reg [2:0] sin_clken_count;
 assign l_pcm_data = triangle_count;
 assign r_pcm_data = triangle_count;
 
-wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};  // = mclk/sample_rate
+//wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};  // = mclk/sample_rate
+wire [15:0] smp_rate_divide = SmpRate_44_1KHz;  // = mclk/sample_rate
 
 
 assign l_dout_valid = data_valid; 
@@ -69,7 +70,7 @@ always @ (posedge clk) begin
         data_valid <= 1'b0;
         sin_clken_count <= 0;
     end
-    else if (sin_clken_count == smp_rate_divide) begin      // sample_rate = mclk/smp_rate_divide
+    else if (sin_clken_count == smp_rate_divide) begin      // smp_rate_divide = mclk/sample_rate
         sin_clken_count <= 0;
         data_valid <= 1'b1;
     end
@@ -90,7 +91,7 @@ always @ (posedge clk) begin
     else begin
         if (data_valid) begin
             if (!neg) begin
-                if ((triangle_count + triangle_incrmnt) < 24'hfffffe) begin
+                if ((triangle_count + triangle_incrmnt) < 24'h7ffffe) begin     // keep positive number, msb=0 (for now)
                     triangle_count <= triangle_count + triangle_incrmnt;
                     neg <= neg;
                 end
@@ -100,7 +101,7 @@ always @ (posedge clk) begin
                 end
             end
             else begin
-                if ((triangle_count - triangle_incrmnt) > triangle_incrmnt) begin
+                if ((triangle_count - triangle_incrmnt) > triangle_incrmnt) begin   // keep positive number, msb=0 (for now)
                     triangle_count <= triangle_count - triangle_incrmnt;
                     neg <= neg;
                 end
@@ -116,6 +117,7 @@ always @ (posedge clk) begin
         end
     end
 end
+
 
 
 endmodule
