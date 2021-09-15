@@ -119,7 +119,7 @@ parameter SmpRate_44_1KHz = 6'h45a; //  1115 -> 0x458
 parameter SmpRate_88_2KHz = 6'h22c; //   557
 */
 
-// Hold Input Data if State Machine Active
+// Barrel shift and Hold Input Data if State Machine Active
 always @ (posedge clk) begin
     if(interp_state == 0) begin               
         l_intrp_data <= l_snd_data;
@@ -127,21 +127,21 @@ always @ (posedge clk) begin
     // barrel shifter
         case (input_max_sample_count[10:7]) 
             4'b0010, 4'b0001, 4'b000: begin     // range: 0 to 0x17f  -> 0 to 383
-                intrp_input_count <= {input_sample_count[8:0], 2'b00}; 
+                // shift 2 <<
+                intrp_input_count <= {input_sample_count[8:0], 2'b00};          
                 intrp_input_max_count <= {input_max_sample_count[8:0], 2'b00}; 
             end
             4'b0101, 4'b0100, 4'b0011: begin     // range: 0x180 to 0x2ff  -> 384 to 767
+                // shift 1 <<
                 intrp_input_count <= {input_sample_count[9:0], 1'b0}; 
                 intrp_input_max_count <= {1'b0, input_max_sample_count[9:0], 1'b0}; 
             end
             default: begin                      // range: 0x300 to 0x7ff  -> 768 to 2047  
+                // no shift
                 intrp_input_count <= input_sample_count; 
                 intrp_input_max_count <= input_max_sample_count; 
             end
         endcase
-            
-//        intrp_input_count <= input_sample_count;            // 96KHz position relative to input sample  (a)
-//        intrp_input_max_count <= input_max_sample_count;    // total mclks between input samples        (1)
     end
     else begin
         l_intrp_data <= l_intrp_data;
