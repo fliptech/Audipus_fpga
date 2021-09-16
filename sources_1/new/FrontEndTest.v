@@ -27,19 +27,25 @@ module FrontEndTest(
 //    input [7:0]         smp_rate_divide_msb,
     input [7:0]         triangle_incrmnt,       // msb only, lsb set to 0s, sets the slope of the triangle based on num_of_bits and smp_rate
  // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
+ 
+    input [1:0]         data_out_select,
+    input               l_pcm_valid,
+    input               r_pcm_valid,
+    input [23:0]        l_pcm_data,
+    input [23:0]        r_pcm_data,
      
     output reg          sin_clken, 
-    output              l_dout_valid,       // strobe
-    output              r_dout_valid,       // strobe
-    output [23:0]       l_pcm_data,
-    output [23:0]       r_pcm_data
+    output reg          l_frontEnd_valid,       // strobe
+    output reg          r_frontEnd_valid,       // strobe
+    output reg [23:0]   l_frontEnd_data,
+    output reg [23:0]   r_frontEnd_data
 );
 
-parameter SmpRate_192KHz = 6'hff;   //   256
-parameter SmpRate_96KHz = 6'h1ff;   //   512
-parameter SmpRate_48KHz = 6'h3ff;   //  1024
-parameter SmpRate_44_1KHz = 6'h45a; //  1115 -> 0x458
-parameter SmpRate_88_2KHz = 6'h22c; //   557
+parameter SmpRate_192KHz = 10'hff;   //   256
+parameter SmpRate_96KHz = 10'h1ff;   //   512
+parameter SmpRate_48KHz = 10'h3ff;   //  1024
+parameter SmpRate_44_1KHz = 10'h45a; //  1115 -> 0x458
+parameter SmpRate_88_2KHz = 10'h22c; //   557
 
 parameter numOfBits = 24;
 
@@ -51,10 +57,8 @@ assign bit_cnt_reg = numOfBits;
 reg neg, data_valid;
 reg [23:0] triangle_count;
 reg [5:0] sample_count;
-reg [2:0] sin_clken_count;
+reg [9:0] smp_clken_count;
 
-assign l_pcm_data = triangle_count;
-assign r_pcm_data = triangle_count;
 
 //wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};  // = mclk/sample_rate
 wire [15:0] smp_rate_divide = SmpRate_44_1KHz;  // = mclk/sample_rate
@@ -68,14 +72,14 @@ assign r_dout_valid = data_valid;
 always @ (posedge clk) begin
     if (!run) begin
         data_valid <= 1'b0;
-        sin_clken_count <= 0;
+        smp_clken_count <= 0;
     end
-    else if (sin_clken_count == smp_rate_divide) begin      // smp_rate_divide = mclk/sample_rate
-        sin_clken_count <= 0;
+    else if (smp_clken_count == smp_rate_divide) begin      // smp_rate_divide = mclk/sample_rate
+        smp_clken_count <= 0;
         data_valid <= 1'b1;
     end
     else begin
-        sin_clken_count <= sin_clken_count + 1;
+        smp_clken_count <= smp_clken_count + 1;
         data_valid <= 1'b0;
     end
 end
@@ -118,6 +122,52 @@ always @ (posedge clk) begin
     end
 end
 
+
+
+// output data mux
+always @ (posedge clk) begin
+    if (!run) begin
+        l_frontEnd_data <= 0;
+        r_frontEnd_data <= 0;
+        l_frontEnd_valid <= 0;
+        r_frontEnd_valid <= 0;
+     end
+    else begin
+        if (data_out_select == 0) begin
+            l_frontEnd_valid <= l_pcm_valid;
+            r_frontEnd_valid <= r_pcm_valid;
+        end
+        else begin
+            l_frontEnd_valid <= data_valid;
+            r_frontEnd_valid <= data_valid;
+        end
+//        
+        if (data_valid) begin
+            case (data_out_select)
+                0: begin
+                    l_frontEnd_data <= l_pcm_data;               
+                    r_frontEnd_data <= r_pcm_data;
+                end         
+                1: begin    // positive dc value
+                    l_frontEnd_data <= 24'h7fff00;
+                    r_frontEnd_data <= 24'h7fff00;
+                end
+                2:  begin    // negative dc value
+                    l_frontEnd_data <= 24'h8000ff;
+                    r_frontEnd_data <= 24'h8000ff;
+                end
+                3:  begin
+                    l_frontEnd_data <= triangle_count;
+                    r_frontEnd_data <= triangle_count;
+                end
+            endcase
+        end
+        else begin
+            l_frontEnd_data <= l_frontEnd_data;
+            r_frontEnd_data <= r_frontEnd_data;
+        end
+    end
+end
 
 
 endmodule
