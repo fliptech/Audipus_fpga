@@ -26,7 +26,7 @@ module FrontEndTest(
 //    input [7:0]         smp_rate_divide_lsb,    // sets the sample rate of the test triangle waveform
 //    input [7:0]         smp_rate_divide_msb,
     input [7:0]         triangle_incrmnt,       // msb only, lsb set to 0s, sets the slope of the triangle based on num_of_bits and smp_rate
- // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
+  // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
  
     input [1:0]         data_out_select,
     input               l_pcm_valid,
@@ -34,7 +34,6 @@ module FrontEndTest(
     input [23:0]        l_pcm_data,
     input [23:0]        r_pcm_data,
      
-    output reg          sin_clken, 
     output reg          l_frontEnd_valid,       // strobe
     output reg          r_frontEnd_valid,       // strobe
     output reg [23:0]   l_frontEnd_data,

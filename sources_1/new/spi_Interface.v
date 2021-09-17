@@ -65,6 +65,8 @@ module spi_Interface # (
     output reg [7:0]    aux_reg,
 //  for test
     output reg [7:0]    test_reg,
+    output reg [7:0]    fe_test_reg,
+    output reg [7:0]    triangle_inc_reg,
     output              shift_in_clken,
     output              shift_out_clken,
     output              miso_tristate,
@@ -105,6 +107,9 @@ wire [6:0] status_reg;
 	parameter TEST             = 7'h11;    // test Reg
 	parameter INTERRUPT        = 7'h12;    // interrupt Reg, rd only, clears after read
 	parameter I2SPCM_BIT_CNT   = 7'h13;    // number of bits in the i2sToPcm data
+	parameter FE_TEST          = 7'h14;    // front end test Reg
+    parameter TRIANGLE_INC     = 7'h15;    // (fe) triangle test wave Reg
+
 
 
 
@@ -146,6 +151,8 @@ always @ (posedge clk) begin
 			else if (spi_addr == SPI_TO_MPIO)    spi_to_mpio_reg             <= spi_write_data;
 			else if (spi_addr == AUX)            aux_reg                     <= spi_write_data;
 			else if (spi_addr == TEST)           test_reg                    <= spi_write_data;
+			else if (spi_addr == FE_TEST)        fe_test_reg                 <= spi_write_data;
+			else if (spi_addr == TRIANGLE_INC)   triangle_inc_reg            <= spi_write_data;
     end
 end
 
@@ -167,6 +174,8 @@ always @ (posedge clk) begin
             (spi_addr == STATUS)         ?   status_reg :
             (spi_addr == INTERRUPT)      ?   interrupt_reg :
             (spi_addr == I2SPCM_BIT_CNT) ?   i2sToPcm_bit_reg :
+            (spi_addr == FE_TEST)        ?   fe_test_reg :
+            (spi_addr == TRIANGLE_INC)   ?   triangle_inc_reg :
             
             8'h99;
     end

@@ -282,7 +282,8 @@ Interpolator_adder r_interp_add (
 //      TEST
 
 
-assign test_data =      (test_d_select == 0) ?  {intrp_coef[1][10:3], intrp_coef[0][10:3]}:
+//assign test_data =      (test_d_select == 0) ?  {intrp_coef[1][10:3], intrp_coef[0][10:3]}:
+assign test_data =      (test_d_select == 0) ?  intrp_coef[1]:
                         (test_d_select == 1) ?  r_mult_dout[34:19] :
                         (test_d_select == 2) ?  r_data_out[33:18] :
                                                 l_data_in[23:8];

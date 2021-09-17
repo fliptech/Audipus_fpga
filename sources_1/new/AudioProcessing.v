@@ -49,6 +49,9 @@ module AudioProcessing #(
     input [7:0] coef_wr_msb_data,   // cpu reg
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
+    input [7:0] fe_test_reg,        // cpu reg
+    input [7:0] triangle_incrmnt,   // cpu reg
+    
     output [7:0] audio_status,      // cpu reg
     output [7:0] test_reg,          // cpu reg
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
@@ -81,7 +84,9 @@ wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 wire [9:0]  sub_sample_cnt;
 wire [15:0] interp_test_d;
-
+///////  FrontEndTest outputs  \\\\\\\
+wire        l_frontEnd_valid, r_frontEnd_valid;
+wire [23:0] l_frontEnd_data, r_frontEnd_data;
 
 /////// audio control register ////////
 wire audio_enable =     audio_control[0];
@@ -103,7 +108,10 @@ assign audio_status[1]  = eq_wr_addr_zero;
 // test from mux
 //assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
 //assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
-assign test_dout_valid = l_i2sToPcm_valid;
+//assign test_dout_valid = l_i2sToPcm_valid;
+//assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
+
+assign test_dout_valid = l_frontEnd_valid;
 assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
 
 /* 
@@ -136,24 +144,40 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .r_dout_valid   (r_i2sToPcm_valid), // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
     .r_pcm_data     (r_pcm_data),       // [23:0] output
-    .bit_cnt_reg    (i2sToPcm_bit_cnt), // [7:0] output
-    .sub_sample_cnt (sub_sample_cnt)    // [9:0] output
-);    
+    .bit_cnt_reg    (i2sToPcm_bit_cnt)  // [7:0] output
+); 
+
+FrontEndTest fe_test (
+    .clk                (clk),
+    .run                (audio_enable),
+    .triangle_incrmnt   (triangle_incrmnt),
+    .data_out_select    (fe_test_reg[1:0]),
+//  input from I2S_to_PCM_Converter for bypass mode (data_out_select=0)  
+    .l_pcm_valid        (l_i2sToPcm_valid),            
+    .r_pcm_valid        (r_i2sToPcm_valid),
+    .l_pcm_data         (l_pcm_data),            
+    .r_pcm_data         (r_pcm_data),
+//  outputs
+    .l_frontEnd_valid   (l_frontEnd_valid),     // strobe    
+    .r_frontEnd_valid   (r_frontEnd_valid),     // strobe
+    .l_frontEnd_data    (l_frontEnd_data),      // output[23:0]                    
+    .r_frontEnd_data    (r_frontEnd_data)       // output[23:0]            
+); 
     
 LinearInterpolator i2s_interpolator (
     .clk                (clk),              // input
     .reset_n            (reset_n),          // input
     .run                (audio_enable),     // input
-    .l_din_en           (l_i2sToPcm_valid),       // input
-    .r_din_en           (r_i2sToPcm_valid),       // input
-    .l_data_in          (l_pcm_data),     // [23:0] input
-    .r_data_in          (r_pcm_data),     // [23:0] input
-    .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
+    .l_din_en           (l_frontEnd_valid),       // input
+    .r_din_en           (r_frontEnd_valid),       // input
+    .l_data_in          (l_frontEnd_data),     // [23:0] input
+    .r_data_in          (r_frontEnd_data),     // [23:0] input
+//    .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
+//  Outputs
     .dout_valid         (intrp_dout_valid), // output
     .l_data_out         (l_intrp_d_out),    // [33:0] output
     .r_data_out         (r_intrp_d_out),     // [33:0] output
-    .interp_cnt         (interp_cnt),        // [2:0] output
-    // for test
+// for test
     .test_d_select      (test_d_select),     // audio_control[2:1]
     .test_data          (interp_test_d)     // [15:0] output
 );
@@ -275,7 +299,6 @@ PCM_to_I2S_Converter pcm_to_i2s(
     // for test
     .i2s_valid      (dac_valid)         // output
 );    
-
 
 endmodule
 
