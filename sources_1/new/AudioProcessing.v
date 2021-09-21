@@ -34,7 +34,7 @@ module AudioProcessing #(
     output reg dac_bclk,
     output reg dac_lrclk,
     output reg dac_data,
-    output     pcmToI2S_valid,          // mainly for test
+//    output     pcmToI2S_valid,          // mainly for test
     // audio SRAM interface signals
 //    output reg sram_spi_cs,
 //    output reg sram_spi_clk,
@@ -49,11 +49,11 @@ module AudioProcessing #(
     input [7:0] coef_wr_msb_data,   // cpu reg
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
+    input [7:0] test_reg,           // cpu reg
     input [7:0] fe_test_reg,        // cpu reg
     input [7:0] triangle_incrmnt,   // cpu reg
     
     output [7:0] audio_status,      // cpu reg
-    output [7:0] test_reg,          // cpu reg
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
     // for test
     output          test_dout_valid,
@@ -89,7 +89,7 @@ wire        l_frontEnd_valid, r_frontEnd_valid;
 wire [23:0] l_frontEnd_data, r_frontEnd_data;
 
 /////// audio control register ////////
-wire audio_enable =     audio_control[0];
+assign audio_enable =     audio_control[0];
 wire [1:0] test_d_select =  audio_control[2:1];
 /////// test control register ////////
 wire [1:0] audio_mux_sel =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 

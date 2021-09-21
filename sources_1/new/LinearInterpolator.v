@@ -51,11 +51,11 @@ module LinearInterpolator(
 
 
 reg [2:0]   interp_state;
-reg [1:0]   l_snd_data[23:0];
-reg [1:0]   r_snd_data[23:0];
-reg [1:0]   l_intrp_data[23:0];
-reg [1:0]   r_intrp_data[23:0];
-reg [1:0]   intrp_coef[10:0];
+reg [23:0]  l_snd_data[1:0];
+reg [23:0]  r_snd_data[1:0];
+reg [23:0]   l_intrp_data[1:0];
+reg [23:0]   r_intrp_data[1:0];
+reg [10:0]   intrp_coef[1:0];
 reg [10:0]  mult_coef;
 reg         mult_en, dout_en, coef_sub_en, adder_en;
 // reg [2:0]   interp_cnt;
@@ -123,8 +123,10 @@ parameter SmpRate_88_2KHz = 6'h22c; //   557
 // Barrel shift and Hold Input Data if State Machine Active
 always @ (posedge clk) begin
     if(interp_state == 0) begin               
-        l_intrp_data <= l_snd_data;
-        r_intrp_data <= r_snd_data;
+        l_intrp_data[0] <= l_snd_data[0];
+        l_intrp_data[1] <= l_snd_data[1];
+        r_intrp_data[0] <= r_snd_data[0];
+        r_intrp_data[1] <= r_snd_data[1];
     // barrel shifter
         case (input_max_sample_count[10:7]) 
             4'b0010, 4'b0001, 4'b000: begin     // range: 0 to 0x17f  -> 0 to 383
@@ -176,7 +178,7 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             dout_valid <= 1'b0;
             // prevent a negative number
-            if (sample_1_coef[11]) begin // if the result is negative, then a = intrp_input_max_count
+            if (sample_1_coef[10]) begin // if the result is negative, then a = intrp_input_max_count
                 intrp_coef[1] <= 0;                         // a-a=0
                 intrp_coef[0] <= intrp_input_max_count;     // a=1
             end
@@ -266,7 +268,7 @@ Interpolator_adder l_interp_add (
   .A            (l_dout[0]),            // input wire [32 : 0] A
   .B            (l_dout[1]),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
-  .CE           (add_en),               // input wire CE
+  .CE           (adder_en),             // input wire CE
   .S            (l_data_out)            // output wire [33 : 0] S
 );
 
@@ -274,7 +276,7 @@ Interpolator_adder r_interp_add (
   .A            (r_dout[0]),            // input wire [32 : 0] A
   .B            (r_dout[1]),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
-  .CE           (add_en),               // input wire CE
+  .CE           (adder_en),               // input wire CE
   .S            (r_data_out)            // output wire [33 : 0] S
 );
 

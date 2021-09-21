@@ -99,6 +99,7 @@ parameter num_of_filters = 4;
     
     wire [7:0] eq_gain_lsb, eq_gain_msb;
     
+    wire            clkGen_i2s_clk;
     assign pcm9211_clk = clkGen_i2s_clk; 
     assign i2s_clk_out = clkGen_i2s_clk; 
     assign dac_sclk = clkGen_i2s_clk; 
@@ -120,7 +121,7 @@ parameter num_of_filters = 4;
     wire [7:0]  sram_control_reg, i2sToPcm_bit_reg; 
     wire [15:0] test_data_out;
     
-    wire        fe_test_reg, triangle_inc_reg;
+    wire [7:0]  fe_test_reg, triangle_inc_reg;
     
     wire        spi_rd_stb, spi_wr_stb;
     
@@ -132,7 +133,6 @@ parameter num_of_filters = 4;
 
     wire            shift_in_clken, shift_out_clken;
     wire            miso_tristate;
-    wire            clkGen_i2s_clk;
     wire [6:0]      spi_addr;
     
     wire [7:0]      sram_start_addr;
@@ -154,10 +154,6 @@ parameter num_of_filters = 4;
     
     assign spdif_out = 1'b0;        // temp << check
 
-    // interrupt register
-    wire [7:0] interrupt_reg = 
-        {1'b0, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
-         pcm9211_int1, pcm9211_int0}; 
          
      // for test
     wire        test_dout_valid;
@@ -247,11 +243,11 @@ parameter num_of_filters = 4;
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
         //output i2s
-        .audio_enable       (!dac_rst),
+        .audio_enable       (~dac_rst),
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),
-        .pcmToI2S_valid     (pcmToI2S_valid),
+//        .pcmToI2S_valid     (pcmToI2S_valid),
         // audio SRAM interface signals
 //        .sram_spi_cs        (spi_cs),
 //        .sram_spi_clk       (spi_clk),
