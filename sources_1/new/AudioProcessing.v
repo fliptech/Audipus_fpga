@@ -112,7 +112,9 @@ assign audio_status[1]  = eq_wr_addr_zero;
 //assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
 
 assign test_dout_valid = l_frontEnd_valid;
-assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
+assign test_data_out = interp_test_d;
+
+//assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
 
 /* 
 /////////////////// FIR Bypass Mux ////////////////////////////
@@ -178,7 +180,7 @@ LinearInterpolator i2s_interpolator (
     .l_data_out         (l_intrp_d_out),    // [33:0] output
     .r_data_out         (r_intrp_d_out),     // [33:0] output
 // for test
-    .test_d_select      (test_d_select),     // audio_control[2:1]
+    .test_d_select      (test_d_select),    // audio_control[2:1]
     .test_data          (interp_test_d)     // [15:0] output
 );
 
