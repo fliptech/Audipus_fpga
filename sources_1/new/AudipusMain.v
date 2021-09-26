@@ -308,14 +308,15 @@ parameter num_of_filters = 4;
 */ 
 // I2S Test
 //    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
+ /* 
     assign test[2:0] = {pcm9211_i2s_d, pcm9211_i2s_lrclk, pcm9211_i2s_bclk};
     assign test[3] = test_dout_valid;
     assign test [15:4] = test_data_out[11:0];
-    
+ */      
 //    assign test[5:3] = interp_cnt;
- /*            
+           
     assign test [15:0] = test_data_out;
- */    
+  
     assign test[16] = test_dout_valid;  // clk qualifier
     assign test[17] = clk;      
 

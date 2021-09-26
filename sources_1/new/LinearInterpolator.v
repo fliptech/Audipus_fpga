@@ -40,7 +40,7 @@ module LinearInterpolator(
     input           r_din_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
- //   input [9:0]     sub_sample_cnt,
+    input [10:0]     sub_sample_cnt,
     output reg      dout_valid,
     output [33:0]   l_data_out,
     output [33:0]   r_data_out,
@@ -285,10 +285,16 @@ Interpolator_adder r_interp_add (
 
 
 //assign test_data =      (test_d_select == 0) ?  {intrp_coef[1][10:3], intrp_coef[0][10:3]}:
-assign test_data =      (test_d_select == 0) ?  intrp_coef[1]:
-                        (test_d_select == 1) ?  r_mult_dout[34:19] :
-                        (test_d_select == 2) ?  r_data_out[33:18] :
-                                                l_data_in[23:8];
+
+
+assign test_data[3:0] =    {interp_state, r_din_en};
+//      SW command:     selectTestOutput
+assign test_data[15:4] =    (test_d_select == 0) ?  {input_sample_counter, dout_en} :
+                            (test_d_select == 1) ?  {sub_sample_cnt, dout_en} :
+//                           (test_d_select == 1) ?  r_snd_data[0][23:12] :
+                            (test_d_select == 2) ?  r_snd_data[1][23:12] :
+                                                    {sample_1_coef, 1'h0};
+//                                                r_data_out[33:18];
 /*
 assign test_data =      (test_d_select == 0) ?  r_data_in[15:0] :
                         (test_d_select == 1) ?  r_data_in[23:8] :

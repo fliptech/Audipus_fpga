@@ -101,6 +101,8 @@ wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 
 wire sin_test_en = (test_reg[1:0] == 2'b10);
 
+wire [10:0] smp_clken_count;
+
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
@@ -161,9 +163,11 @@ FrontEndTest fe_test (
     .r_pcm_data         (r_pcm_data),
 //  outputs
     .l_frontEnd_valid   (l_frontEnd_valid),     // strobe    
-    .r_frontEnd_valid   (r_frontEnd_valid),     // strobe
+//    .r_frontEnd_valid   (r_frontEnd_valid),     // strobe
+    .data_valid   (r_frontEnd_valid),     // strobe
     .l_frontEnd_data    (l_frontEnd_data),      // output[23:0]                    
-    .r_frontEnd_data    (r_frontEnd_data)       // output[23:0]            
+    .r_frontEnd_data    (r_frontEnd_data),       // output[23:0]  
+    .smp_clken_count    (smp_clken_count)         
 ); 
     
 LinearInterpolator i2s_interpolator (
@@ -174,7 +178,7 @@ LinearInterpolator i2s_interpolator (
     .r_din_en           (r_frontEnd_valid),       // input
     .l_data_in          (l_frontEnd_data),     // [23:0] input
     .r_data_in          (r_frontEnd_data),     // [23:0] input
-//    .sub_sample_cnt     (sub_sample_cnt),    // [9:0] input
+    .sub_sample_cnt     (smp_clken_count),    // [10:0] input
 //  Outputs
     .dout_valid         (intrp_dout_valid), // output
     .l_data_out         (l_intrp_d_out),    // [33:0] output

@@ -35,16 +35,18 @@ module FrontEndTest(
     input [23:0]        r_pcm_data,
      
     output reg          l_frontEnd_valid,       // strobe
-    output reg          r_frontEnd_valid,       // strobe
+//    output reg          r_frontEnd_valid,       // strobe
+    output reg          data_valid,             // strobe
     output reg [23:0]   l_frontEnd_data,
-    output reg [23:0]   r_frontEnd_data
+    output reg [23:0]   r_frontEnd_data,
+    output reg [10:0]   smp_clken_count    
 );
 
-parameter SmpRate_192KHz = 10'hff;   //   256
-parameter SmpRate_96KHz = 10'h1ff;   //   512
-parameter SmpRate_48KHz = 10'h3ff;   //  1024
-parameter SmpRate_44_1KHz = 10'h45a; //  1115 -> 0x458
-parameter SmpRate_88_2KHz = 10'h22c; //   557
+parameter SmpRate_192KHz = 11'hff;   //   256
+parameter SmpRate_96KHz = 11'h1ff;   //   512
+parameter SmpRate_48KHz = 11'h3ff;   //  1024
+parameter SmpRate_44_1KHz = 11'h45a; //  1115 -> 0x458
+parameter SmpRate_88_2KHz = 11'h22c; //   557
 
 parameter numOfBits = 24;
 
@@ -55,13 +57,9 @@ assign bit_cnt_reg = numOfBits;
 
 reg neg, data_valid;
 reg [23:0] triangle_count;
-reg [5:0] sample_count;
-reg [9:0] smp_clken_count;
+//reg [10:0] smp_clken_count;
 
-
-//wire [15:0] smp_rate_divide = {smp_rate_divide_msb, smp_rate_divide_lsb};  // = mclk/sample_rate
-wire [15:0] smp_rate_divide = SmpRate_44_1KHz;  // = mclk/sample_rate
-
+reg          r_frontEnd_valid;
 
 assign l_dout_valid = data_valid; 
 assign r_dout_valid = data_valid; 
@@ -73,7 +71,7 @@ always @ (posedge clk) begin
         data_valid <= 1'b0;
         smp_clken_count <= 0;
     end
-    else if (smp_clken_count == smp_rate_divide) begin      // smp_rate_divide = mclk/sample_rate
+    else if (smp_clken_count == SmpRate_44_1KHz) begin      // smp_rate_divide = mclk/sample_rate
         smp_clken_count <= 0;
         data_valid <= 1'b1;
     end
@@ -140,7 +138,7 @@ always @ (posedge clk) begin
             l_frontEnd_valid <= data_valid;
             r_frontEnd_valid <= data_valid;
         end
-//        
+//      SW command:     feTest
         if (data_valid) begin
             case (data_out_select)
                 0: begin
