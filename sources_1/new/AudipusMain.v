@@ -64,7 +64,8 @@ parameter num_of_equalizers = 8;
         input   [27:22] rPix,
         
         
-        output [17:0]   test,
+        output reg [16:0]   test,
+        output              test_clk,
         inout [9:0]     aux,
         output [3:0]    step_drv,
         output [3:0]    led,
@@ -314,11 +315,14 @@ parameter num_of_filters = 4;
     assign test [15:4] = test_data_out[11:0];
  */      
 //    assign test[5:3] = interp_cnt;
+
+always @ (posedge clk) begin
            
-    assign test [15:0] = test_data_out;
-  
-    assign test[16] = test_dout_valid;  // clk qualifier
-    assign test[17] = clk;      
+    test [15:0] <= test_data_out;
+    test[16] <= test_dout_valid;  // clk qualifier
+end
+    
+assign test_clk = clk;      
 
             
     

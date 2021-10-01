@@ -102,7 +102,7 @@ set_property PACKAGE_PIN W5 [get_ports {test[13]}]
 set_property PACKAGE_PIN W4 [get_ports {test[14]}]
 set_property PACKAGE_PIN W7 [get_ports {test[15]}]
 set_property PACKAGE_PIN W6 [get_ports {test[16]}]
-set_property PACKAGE_PIN U8 [get_ports {test[17]}]
+set_property PACKAGE_PIN U8 [get_ports {test_clk}]
 #
 ##############################################
 #
@@ -210,7 +210,7 @@ set_property IOSTANDARD LVCMOS18 [get_ports {test[13]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {test[14]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {test[15]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {test[16]}]
-set_property IOSTANDARD LVCMOS18 [get_ports {test[17]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {test_clk}]
 
 
 

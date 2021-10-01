@@ -55,7 +55,7 @@ assign bit_cnt_reg = numOfBits;
 // samplePerCycle = sample_rate / tri_freq = 96000/1000 = 96
 
 
-reg neg, data_valid;
+reg neg;
 reg [23:0] triangle_count;
 //reg [10:0] smp_clken_count;
 
