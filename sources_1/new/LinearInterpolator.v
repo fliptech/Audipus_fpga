@@ -208,10 +208,9 @@ always @ (posedge clk) begin
             l_dout[1] <= l_mult_dout[34:2];
             r_dout[1] <= r_mult_dout[34:2];
                         
-            interp_test_reg <= mult_coef;
-//            interp_test_reg <= r_mult_dout[34:24];
+            interp_test_reg <= r_intrp_data[0][23:13];
         end       
-        3'h3: begin
+        3'h3: begin             
             interp_state <= 3'h4;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
@@ -223,10 +222,9 @@ always @ (posedge clk) begin
             l_dout[1] <= l_dout[1]; 
             r_dout[1] <= r_dout[1]; 
             
-            interp_test_reg <= mult_coef;
-//            interp_test_reg <= r_mult_dout[34:24];
+            interp_test_reg <= r_mult_dout[34:24];        // result = d[1] x (1 - a)
         end
-        3'h4: begin
+        3'h4: begin                     
             interp_state <= 3'h5;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
@@ -236,7 +234,7 @@ always @ (posedge clk) begin
             l_dout <= l_dout; 
             r_dout <= r_dout; 
             
-            interp_test_reg <= r_mult_dout[34:23];
+            interp_test_reg <= r_mult_dout[34:24];      // result = d[0] x a
         end         
         3'h5: begin
             interp_state <= 3'h0;
@@ -245,7 +243,7 @@ always @ (posedge clk) begin
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
              
-            interp_test_reg <= r_data_out[33:3];           
+            interp_test_reg <= r_mult_dout[34:24];           
         end
         default: begin
             mult_en <= 1'b0;
