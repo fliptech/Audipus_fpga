@@ -61,8 +61,8 @@ reg         mult_en, dout_en, coef_sub_en, adder_en;
 // reg [2:0]   interp_cnt;
 reg [23:0]  l_mult_din, r_mult_din;
 reg [34:0]  l_mult_dout, r_mult_dout;
-reg [1:0]   l_dout[32:0];
-reg [1:0]   r_dout[32:0];
+reg [32:0]  l_dout_A,  l_dout_B;
+reg [32:0]  r_dout_A,  r_dout_B;
 reg [10:0]   input_max_sample_count, input_sample_count, input_sample_counter; 
 reg [10:0]   intrp_input_count, intrp_input_max_count, sample_96KHz_count;
 reg [10:0]   interp_sub_result;
@@ -204,23 +204,20 @@ always @ (posedge clk) begin
             l_mult_din <= l_intrp_data[0];
             r_mult_din <= r_intrp_data[0];
             mult_coef <= intrp_input_count;         // mult_coef <= current input sample position:  a
-            
-            l_dout[1] <= l_mult_dout[34:2];
-            r_dout[1] <= r_mult_dout[34:2];
-                        
-            interp_test_reg <= r_intrp_data[0][23:13];
+                                    
+            interp_test_reg <= r_mult_dout[34:24];
         end       
         3'h3: begin             
             interp_state <= 3'h4;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
-            adder_en <= 1'b1;
+            adder_en <= 1'b0;
             dout_valid <= 1'b0;
             
-            l_dout[0] <= l_mult_dout[34:2];
-            r_dout[0] <= r_mult_dout[34:2];
-            l_dout[1] <= l_dout[1]; 
-            r_dout[1] <= r_dout[1]; 
+            l_dout_B <= l_mult_dout[34:2];
+            r_dout_B <= r_mult_dout[34:2];
+            l_dout_A <= l_dout_A; 
+            r_dout_A <= r_dout_A; 
             
             interp_test_reg <= r_mult_dout[34:24];        // result = d[1] x (1 - a)
         end
@@ -228,22 +225,38 @@ always @ (posedge clk) begin
             interp_state <= 3'h5;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
-            adder_en <= 1'b0;
-            dout_valid <= 1'b1;         // enable dout_vaild
+            adder_en <= 1'b1;
+            dout_valid <= 1'b0;         // enable dout_vaild
             
-            l_dout <= l_dout; 
-            r_dout <= r_dout; 
+            l_dout_A <= l_mult_dout[34:2];
+            r_dout_A <= r_mult_dout[34:2];
+            l_dout_B <= l_dout_B; 
+            r_dout_B <= r_dout_B; 
             
             interp_test_reg <= r_mult_dout[34:24];      // result = d[0] x a
         end         
         3'h5: begin
+            interp_state <= 3'h6;
+            mult_en <= 1'b0;
+            coef_sub_en <= 1'b0;
+            adder_en <= 1'b0;
+            dout_valid <= 1'b1;
+             
+            l_dout_A <= l_dout_A; 
+            r_dout_A <= r_dout_A; 
+            l_dout_B <= l_dout_B; 
+            r_dout_B <= r_dout_B; 
+
+            interp_test_reg <= r_data_out[33:23];           
+        end
+        3'h6: begin
             interp_state <= 3'h0;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
              
-            interp_test_reg <= r_mult_dout[34:24];           
+            interp_test_reg <= r_data_out[33:23];           
         end
         default: begin
             mult_en <= 1'b0;
@@ -284,16 +297,16 @@ interp_mult r_interp_mult (
  );
    
 Interpolator_adder l_interp_add (
-  .A            (l_dout[0]),            // input wire [32 : 0] A
-  .B            (l_dout[1]),            // input wire [32 : 0] B
+  .A            (l_dout_A),            // input wire [32 : 0] A
+  .B            (l_dout_B),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
   .CE           (adder_en),             // input wire CE
   .S            (l_data_out)            // output wire [33 : 0] S
 );
 
 Interpolator_adder r_interp_add (
-  .A            (r_dout[0]),            // input wire [32 : 0] A
-  .B            (r_dout[1]),            // input wire [32 : 0] B
+  .A            (r_dout_A),            // input wire [32 : 0] A
+  .B            (r_dout_B),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
   .CE           (adder_en),               // input wire CE
   .S            (r_data_out)            // output wire [33 : 0] S
@@ -307,7 +320,7 @@ Interpolator_adder r_interp_add (
 
 //      SW command:         selectTestOutput
 
-assign test_data[4:0] =     {interp_state, r_din_en, dout_en};
+assign test_data[4:0] =     {interp_state, r_din_en, dout_valid};
 assign test_data[15:5] =    interp_test_reg;
 
 /*
