@@ -270,7 +270,7 @@ parameter num_of_filters = 4;
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out),
         .fe_test_reg        (fe_test_reg),
-        .triangle_incrmnt   (triangle_inc_reg),
+        .triangle_inc_reg   (triangle_inc_reg),
  // for sin test
         .interp_cnt          (interp_cnt)         
     );

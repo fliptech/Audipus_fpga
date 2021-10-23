@@ -51,7 +51,7 @@ module AudioProcessing #(
     input [7:0] eq_wr_msb_data,     // cpu reg
     input [7:0] test_reg,           // cpu reg
     input [7:0] fe_test_reg,        // cpu reg
-    input [7:0] triangle_incrmnt,   // cpu reg
+    input [7:0] triangle_inc_reg,   // cpu reg
     
     output [7:0] audio_status,      // cpu reg
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
@@ -154,7 +154,7 @@ I2S_to_PCM_Converter i2s_to_pcm(
 FrontEndTest fe_test (
     .clk                (clk),
     .run                (audio_enable),
-    .triangle_incrmnt   (triangle_incrmnt),
+    .triangle_inc_reg   (triangle_inc_reg),
     .data_out_select    (fe_test_reg[1:0]),
 //  input from I2S_to_PCM_Converter for bypass mode (data_out_select=0)  
     .l_pcm_valid        (l_i2sToPcm_valid),            
