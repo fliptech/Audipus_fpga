@@ -64,8 +64,8 @@ reg [34:0]  l_mult_dout, r_mult_dout;
 reg [32:0]  l_dout_A,  l_dout_B;
 reg [32:0]  r_dout_A,  r_dout_B;
 reg [10:0]   input_max_sample_count, input_sample_count, input_sample_counter; 
-reg [10:0]   snd_sample_count, snd_sample_max_count; 
-reg [10:0]   intrp_input_max_count, sample_96KHz_count;
+reg [10:0]   coef_sub_sample; 
+reg [10:0]   sample_96KHz_count;
 reg [10:0]   interp_sub_result;
 reg [10:0]   interp_test_reg;
 
@@ -105,85 +105,19 @@ always @ (posedge clk) begin
         l_snd_data[1] <= l_snd_data[0];
         input_sample_counter <= 0;
         input_max_sample_count <= input_sample_counter;
-        coef_switch <= !coef_switch;
     end
     else begin
         r_snd_data <= r_snd_data;
         l_snd_data <= l_snd_data;
         input_sample_counter <= input_sample_counter + 1;        
         input_max_sample_count <= input_max_sample_count;
-        coef_switch <= coef_switch; 
     end
 end
-/*
-always @ (posedge clk) begin
-    if (coef_A_wr) begin
-        fifo_A_wr_en <= dout_en;
-        fifo_A_rd_en <= 1'b0;
-        fifo_B_wr_en <= 1'b0;
-        fifo_B_rd_en <= coef_rd_en;
-    end
-    else begin
-        fifo_A_wr_en <= 1'b0;
-        fifo_A_rd_en <= coef_rd_en;
-        fifo_B_wr_en <= dout_en;
-        fifo_B_rd_en <= 1'b0;
-    end
- */
-reg coef_A_wr, coef_switch, next_coef;
- 
-wire fifo_A_wr_en = coef_A_wr ? dout_en : 1'b0;
-wire fifo_B_wr_en = !coef_A_wr ? dout_en : 1'b0;
-wire fifo_A_rd_en = !coef_A_wr ? next_coef : 1'b0;
-wire fifo_B_rd_en = coef_A_wr ? next_coef : 1'b0;
-wire sample_fifo_empty = coef_A_wr ? fifo_A_empty : fifo_B_empty;
-wire sample_fifo_full = coef_A_wr ? fifo_A_full : fifo_B_full;
-wire [10:0] coef_sub_sample = coef_A_wr ? fifo_A_dout : fifo_B_dout;
-            
- sample_count_fifo  smpl_cnt_fifo_A (
-    .clk        (clk),      // input wire clk
-    .srst       (~reset_n),    // input wire srst
-    .din        (input_sample_count),      // input wire [10 : 0] din
-    .wr_en      (fifo_A_wr_en),  // input wire wr_en
-    .rd_en      (fifo_A_rd_en),  // input wire rd_en
-    .dout       (fifo_A_dout),    // output wire [10 : 0] dout
-    .full       (fifo_A_full),    // output wire full
-    .empty      (fifo_A_empty)  // output wire empty
-);
-           
- sample_count_fifo  smpl_cnt_fifo_B (
-    .clk        (clk),      // input wire clk
-    .srst       (~reset_n),    // input wire srst
-    .din        (input_sample_count),      // input wire [10 : 0] din
-    .wr_en      (fifo_B_wr_en),  // input wire wr_en
-    .rd_en      (fifo_B_rd_en),  // input wire rd_en
-    .dout       (fifo_B_dout),    // output wire [10 : 0] dout
-    .full       (fifo_B_full),    // output wire full
-    .empty      (fifo_B_empty)  // output wire empty
-);
-           
- 
-/*         
-parameter SmpRate_192KHz = 6'hff;   //   256
-parameter SmpRate_96KHz = 6'h1ff;   //   512
-parameter SmpRate_48KHz = 6'h3ff;   //  1024
-parameter SmpRate_44_1KHz = 6'h45a; //  1115 -> 0x458
-parameter SmpRate_88_2KHz = 6'h22c; //   557
-*/
 
-// (Barrel shift and) Hold Input Data if State Machine Active
-always @ (posedge clk) begin
-    if((interp_state == 0) && !dout_en) begin               
-//    if(interp_state) begin               
-        l_intrp_data[0] <= l_snd_data[0];
-        l_intrp_data[1] <= l_snd_data[1];
-        r_intrp_data[0] <= r_snd_data[0];
-        r_intrp_data[1] <= r_snd_data[1];
 
-        intrp_input_max_count <= snd_sample_max_count; 
-        coef_A_wr <= coef_switch;
-/*
-    // barrel shifter
+/* (Barrel shift and) Hold Input Data if State Machine Active
+always @ (posedge clk) begin
+// barrel shifter
         case (input_max_sample_count[10:7]) 
             4'b0010, 4'b0001, 4'b000: begin     // range: 0 to 0x17f  -> 0 to 383
                 // shift 2 <<
@@ -201,34 +135,42 @@ always @ (posedge clk) begin
                 intrp_input_max_count <= input_max_sample_count; 
             end
         endcase
-*/
+///
     end
     else begin
         l_intrp_data <= l_intrp_data;
         r_intrp_data <= r_intrp_data;
         intrp_input_max_count <= intrp_input_max_count;
-        coef_A_wr <= coef_A_wr;
     end
 end
-
-    
+*/   
 
 // Interpolatator State Machine
 always @ (posedge clk) begin
+//    interp_test_reg <= {fifo_A_full, fifo_B_full, fifo_A_empty, fifo_B_empty, coef_A_wr, coef_switch, next_coef, fifo_B_rd_en, fifo_B_wr_en, fifo_A_rd_en, fifo_A_wr_en};
     case (interp_state)
         3'h0: begin                        // idle
             mult_en <= 1'b0;
             coef_sub_en <= 1'b1;       // subtractor left enabled
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            next_coef <= 1'b0;
             
             if (dout_en) begin          // move out of idle  
                 interp_state <= 3'h1;
-                interp_test_reg <= coef_sub_sample;
+                coef_sub_sample <= input_sample_counter;
+                l_intrp_data[0] <= l_snd_data[0];
+                l_intrp_data[1] <= l_snd_data[1];
+                r_intrp_data[0] <= r_snd_data[0];
+                r_intrp_data[1] <= r_snd_data[1];
+                interp_test_reg <= input_sample_counter;    // = coef_sub_sample (a)
             end
             else begin
                 interp_state <= 3'h0;
+                
+                coef_sub_sample <= coef_sub_sample;               
+                l_intrp_data <= l_intrp_data;
+                r_intrp_data <= r_intrp_data;
+                
                 interp_test_reg <= r_data_in[23:13];
 //                interp_test_reg <= intrp_input_max_count;
             end
@@ -239,12 +181,16 @@ always @ (posedge clk) begin
             mult_en <= 1'b1;            // enable mult_en
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            next_coef <= 1'b0;
 
-            l_mult_din <= l_intrp_data[1];
-            r_mult_din <= r_intrp_data[1];
-            mult_coef <= interp_sub_result;             // mult_coef <= subtracter result:  1 - a 
-            interp_test_reg <= interp_sub_result;
+            l_mult_din <= l_intrp_data[0];
+            r_mult_din <= r_intrp_data[0];
+            mult_coef <= coef_sub_sample;         // mult_coef <= current input sample position:  a
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
+            
+            interp_test_reg <= r_intrp_data[0][23:13];
         end
             
         3'h2: begin
@@ -253,13 +199,17 @@ always @ (posedge clk) begin
             mult_en <= 1'b1;            // enable mult_en
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            next_coef <= 1'b0;
+
+            coef_sub_sample <= coef_sub_sample;               
+            l_mult_din <= l_intrp_data[1];
+            r_mult_din <= r_intrp_data[1];
+            mult_coef <= interp_sub_result;             // mult_coef <= subtracter result:  1 - a             
+                
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
             
-            l_mult_din <= l_intrp_data[0];
-            r_mult_din <= r_intrp_data[0];
-            mult_coef <= coef_sub_sample;         // mult_coef <= current input sample position:  a
-                                    
-            interp_test_reg <= r_intrp_data[0][23:13];
+            interp_test_reg <= interp_sub_result;
+                                   
         end       
         3'h3: begin             
             interp_state <= 3'h4;
@@ -267,12 +217,15 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            next_coef <= 1'b0;
             
             l_dout_B <= l_mult_dout[34:2];
             r_dout_B <= r_mult_dout[34:2];
             l_dout_A <= l_dout_A; 
             r_dout_A <= r_dout_A; 
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
             
             interp_test_reg <= r_mult_dout[34:24];        // result = d[1] x (1 - a)
         end
@@ -282,12 +235,15 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;
             adder_en <= 1'b1;
             dout_valid <= 1'b0;         // enable dout_vaild
-            next_coef <= 1'b0;
             
             l_dout_A <= l_mult_dout[34:2];
             r_dout_A <= r_mult_dout[34:2];
             l_dout_B <= l_dout_B; 
             r_dout_B <= r_dout_B; 
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
             
             interp_test_reg <= r_mult_dout[34:24];      // result = d[0] x a
         end         
@@ -297,13 +253,16 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b1;
-            next_coef <= 1'b0;
              
             l_dout_A <= l_dout_A; 
             r_dout_A <= r_dout_A; 
             l_dout_B <= l_dout_B; 
             r_dout_B <= r_dout_B; 
-
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
+            
             interp_test_reg <= r_intrp_data[1][23:13];           
         end
         3'h6: begin
@@ -312,8 +271,11 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
-            next_coef <= 1'b1;
-             
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
+            
             interp_test_reg <= r_data_out[33:23];           
         end
         default: begin
@@ -322,6 +284,11 @@ always @ (posedge clk) begin
             adder_en <= 1'b0;
             dout_valid <= 1'b0;
             interp_state <= 3'h0;
+                
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
+            
             interp_test_reg <= 11'h7ff;
         end
     endcase
@@ -329,7 +296,7 @@ end
                 
 
 interpolator_subtractor l_interp_sub (
-    .A            (intrp_input_max_count),  // input wire [10 : 0] A
+    .A            (input_max_sample_count), // input wire [10 : 0] A
     .B            (coef_sub_sample),        // input wire [10 : 0] B
     .CLK          (clk),                    // input wire CLK
     .CE           (coef_sub_en),            // input wire CE
@@ -378,7 +345,8 @@ Interpolator_adder r_interp_add (
 
 //      SW command:         selectTestOutput
 
-assign test_data[4:0] =     {interp_state, r_din_en, dout_valid};
+//assign test_data[4:0] =     {interp_state, r_din_en, dout_valid};
+assign test_data[4:0] =     {interp_state, r_din_en, dout_en};
 assign test_data[15:5] =    interp_test_reg;
 
 /*

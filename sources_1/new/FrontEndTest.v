@@ -45,7 +45,7 @@ module FrontEndTest(
 parameter SmpRate_192KHz = 11'hff;   //   256
 parameter SmpRate_96KHz = 11'h1ff;   //   512
 parameter SmpRate_48KHz = 11'h3ff;   //  1024
-parameter SmpRate_44_1KHz = 11'h45a; //  1115 -> 0x458
+parameter SmpRate_44_1KHz = 11'h45a; //  1115 -> 0x45a
 parameter SmpRate_88_2KHz = 11'h22c; //   557
 
 parameter numOfBits = 24;
