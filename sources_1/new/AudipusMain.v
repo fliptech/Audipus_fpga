@@ -270,9 +270,7 @@ parameter num_of_filters = 4;
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out),
         .fe_test_reg        (fe_test_reg),
-        .triangle_inc_reg   (triangle_inc_reg),
- // for sin test
-        .interp_cnt          (interp_cnt)         
+        .triangle_inc_reg   (triangle_inc_reg)
     );
 
 
@@ -314,7 +312,6 @@ parameter num_of_filters = 4;
     assign test[3] = test_dout_valid;
     assign test [15:4] = test_data_out[11:0];
  */      
-//    assign test[5:3] = interp_cnt;
 
 always @ (posedge clk) begin
            

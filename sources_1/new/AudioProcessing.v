@@ -57,9 +57,7 @@ module AudioProcessing #(
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
     // for test
     output          test_dout_valid,
-    output [15:0]   test_data_out,
-  // for sin test
-    output [2:0]    interp_cnt        //  output, 
+    output [15:0]   test_data_out
            
 );
 
@@ -107,16 +105,6 @@ wire [10:0] smp_clken_count;
 assign audio_status[0]  = fir_wr_addr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
-// test from mux
-//assign test_data_out = test_left ? interp_test_d : r_pcm_data[7:0];
-//assign test_dout_valid = test_left ? r_mux_valid : intrp_dout_valid;
-//assign test_dout_valid = l_i2sToPcm_valid;
-//assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
-
-assign test_dout_valid = l_frontEnd_valid;
-assign test_data_out = interp_test_d;
-
-//assign test_data_out = test_left ? {4'h0, l_pcm_data[15:4]} : l_pcm_data[15:0];
 
 /* 
 /////////////////// FIR Bypass Mux ////////////////////////////
@@ -164,7 +152,7 @@ FrontEndTest fe_test (
 //  outputs
     .l_frontEnd_valid   (l_frontEnd_valid),     // strobe    
 //    .r_frontEnd_valid   (r_frontEnd_valid),     // strobe
-    .data_valid   (r_frontEnd_valid),     // strobe
+    .data_valid         (r_frontEnd_valid),     // strobe
     .l_frontEnd_data    (l_frontEnd_data),      // output[23:0]                    
     .r_frontEnd_data    (r_frontEnd_data),       // output[23:0]  
     .smp_clken_count    (smp_clken_count)         
@@ -184,7 +172,6 @@ LinearInterpolator i2s_interpolator (
     .l_data_out         (l_intrp_d_out),    // [33:0] output
     .r_data_out         (r_intrp_d_out),     // [33:0] output
 // for test
-    .test_d_select      (test_d_select),    // audio_control[2:1]
     .test_data          (interp_test_d)     // [15:0] output
 );
 
@@ -304,7 +291,24 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .s_data         (dac_data),         // output
     // for test
     .i2s_valid      (dac_valid)         // output
-);    
+); 
+
+//  TEST
+// test from mux
+
+assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
+                        (test_d_select == 1) ? r_frontEnd_data[23:8] :
+                        (test_d_select == 2) ? r_intrp_d_out[33:18] :
+                        0
+;
+
+
+assign test_dout_valid =    (test_d_select == 0) ? 1'b1 :
+                            (test_d_select == 1) ? r_frontEnd_valid :
+                            (test_d_select == 2) ? intrp_dout_valid :
+                            1'b1;
+;
+   
 
 endmodule
 
