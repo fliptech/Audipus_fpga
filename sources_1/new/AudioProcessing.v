@@ -71,7 +71,7 @@ wire l_eq_valid, r_eq_valid;
 wire sin_wave_valid, intrp_dout_valid;
 wire fir_wr_addr_zero, eq_wr_addr_zero;
  
-wire        l_i2sToPcm_valid, r_i2sToPcm_valid;
+wire        i2sToPcm_valid;
 //wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
 wire        l_fir_data_valid, r_fir_data_valid;
 wire        l_mux_valid, r_mux_valid;
@@ -83,7 +83,7 @@ wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters
 wire [9:0]  sub_sample_cnt;
 wire [15:0] interp_test_d;
 ///////  FrontEndTest outputs  \\\\\\\
-wire        l_frontEnd_valid, r_frontEnd_valid;
+wire        frontEnd_valid;
 wire [23:0] l_frontEnd_data, r_frontEnd_data;
 
 /////// audio control register ////////
@@ -132,8 +132,7 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .bclk           (i2s_bclk),         // input
     .lrclk          (i2s_lrclk),        // input
     .i2s_data       (i2s_d),            // input
-    .l_dout_valid   (l_i2sToPcm_valid), // output strobe     
-    .r_dout_valid   (r_i2sToPcm_valid), // output strobe     
+    .dout_valid     (i2sToPcm_valid), // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
     .r_pcm_data     (r_pcm_data),       // [23:0] output
     .bit_cnt_reg    (i2sToPcm_bit_cnt)  // [7:0] output
@@ -143,30 +142,24 @@ FrontEndTest fe_test (
     .clk                (clk),
     .run                (audio_enable),
     .triangle_inc_reg   (triangle_inc_reg),
-    .data_out_select    (fe_test_reg[1:0]),
+    .data_out_select    (fe_test_reg[1:0]),     // 0 = bypass
 //  input from I2S_to_PCM_Converter for bypass mode (data_out_select=0)  
-    .l_pcm_valid        (l_i2sToPcm_valid),            
-    .r_pcm_valid        (r_i2sToPcm_valid),
+    .pcm_valid          (i2sToPcm_valid),            
     .l_pcm_data         (l_pcm_data),            
     .r_pcm_data         (r_pcm_data),
 //  outputs
-    .l_frontEnd_valid   (l_frontEnd_valid),     // strobe    
-//    .r_frontEnd_valid   (r_frontEnd_valid),     // strobe
-    .data_valid         (r_frontEnd_valid),     // strobe
+    .frontEnd_valid     (frontEnd_valid),     // strobe    
     .l_frontEnd_data    (l_frontEnd_data),      // output[23:0]                    
-    .r_frontEnd_data    (r_frontEnd_data),       // output[23:0]  
-    .smp_clken_count    (smp_clken_count)         
+    .r_frontEnd_data    (r_frontEnd_data)      // output[23:0]  
 ); 
     
 LinearInterpolator i2s_interpolator (
     .clk                (clk),              // input
     .reset_n            (reset_n),          // input
     .run                (audio_enable),     // input
-    .l_din_en           (l_frontEnd_valid),       // input
-    .r_din_en           (r_frontEnd_valid),       // input
+    .din_en             (frontEnd_valid),       // input
     .l_data_in          (l_frontEnd_data),     // [23:0] input
     .r_data_in          (r_frontEnd_data),     // [23:0] input
-    .sub_sample_cnt     (smp_clken_count),    // [10:0] input
 //  Outputs
     .dout_valid         (intrp_dout_valid), // output
     .l_data_out         (l_intrp_d_out),    // [33:0] output
@@ -297,14 +290,14 @@ PCM_to_I2S_Converter pcm_to_i2s(
 // test from mux
 
 assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
-                        (test_d_select == 1) ? r_frontEnd_data[23:8] :
+                        (test_d_select == 1) ? {r_frontEnd_data[16:4], i2s_d, i2s_lrclk, i2s_bclk} :
                         (test_d_select == 2) ? r_intrp_d_out[33:18] :
                         0
 ;
 
 
 assign test_dout_valid =    (test_d_select == 0) ? 1'b1 :
-                            (test_d_select == 1) ? r_frontEnd_valid :
+                            (test_d_select == 1) ? frontEnd_valid :
                             (test_d_select == 2) ? intrp_dout_valid :
                             1'b1;
 ;

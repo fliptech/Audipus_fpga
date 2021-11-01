@@ -36,11 +36,9 @@ module LinearInterpolator(
     input           clk,
     input           reset_n,
     input           run,
-    input           l_din_en,      // ignore and just use r_din_en for both channels
-    input           r_din_en,
+    input           din_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
-    input [10:0]     sub_sample_cnt,
     output reg      dout_valid,
     output [33:0]   l_data_out,
     output [33:0]   r_data_out,
@@ -97,7 +95,7 @@ end
 // access 2 consecutive samples (l & r) and sub_sample count between the 2 samples
 // get coefficient from sub sample count
 always @ (posedge clk) begin
-    if(r_din_en) begin              // strobe, start/end of a sample
+    if(din_en) begin              // strobe, start/end of a sample
         r_snd_data[0] <= r_data_in;
         r_snd_data[1] <= r_snd_data[0];
         l_snd_data[0] <= l_data_in;
@@ -339,7 +337,7 @@ Interpolator_adder r_interp_add (
 
 //      TEST
 
-assign test_data[4:0] =     {interp_state, r_din_en, dout_en};
+assign test_data[4:0] =     {interp_state, din_en, dout_en};
 assign test_data[15:5] =    interp_test_reg;
 
 

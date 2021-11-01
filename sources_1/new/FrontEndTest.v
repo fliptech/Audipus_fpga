@@ -29,17 +29,13 @@ module FrontEndTest(
   // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
  
     input [1:0]         data_out_select,
-    input               l_pcm_valid,
-    input               r_pcm_valid,
+    input               pcm_valid,
     input [23:0]        l_pcm_data,
     input [23:0]        r_pcm_data,
      
-    output reg          l_frontEnd_valid,       // strobe
-//    output reg          r_frontEnd_valid,       // strobe
-    output reg          data_valid,             // strobe
-    output reg [23:0]   l_frontEnd_data,
-    output reg [23:0]   r_frontEnd_data,
-    output reg [10:0]   smp_clken_count    
+    output              frontEnd_valid,       // strobe
+    output [23:0]       l_frontEnd_data,
+    output [23:0]       r_frontEnd_data
 );
 
 parameter SmpRate_192KHz = 11'hff;   //   256
@@ -55,16 +51,19 @@ assign bit_cnt_reg = numOfBits;
 // samplePerCycle = sample_rate / tri_freq = 96000/1000 = 96
 
 
-reg neg;
-reg [23:0] triangle_count;
-//reg [10:0] smp_clken_count;
-
-reg          r_frontEnd_valid;
+reg neg, data_valid, data_valid_out;
+reg [23:0] frontEnd_data, triangle_count;
+reg [10:0] smp_clken_count;
 
 wire [23:0]  triangle_incrmnt = {3'h0, triangle_inc_reg, 13'h0000};
 
-assign l_dout_valid = data_valid; 
-assign r_dout_valid = data_valid; 
+// PCM ByPass
+assign frontEnd_valid = (data_out_select == 0) ? pcm_valid : data_valid_out; 
+
+assign l_frontEnd_data = (data_out_select == 0) ? l_pcm_data : frontEnd_data;
+assign r_frontEnd_data = (data_out_select == 0) ? r_pcm_data : frontEnd_data;
+//  *********************** 
+
 
 // create the test sample clk strobe datavalid
 // divide mclk 49.152MHz by smp_rate_divide to create the SampleRate via clken
@@ -126,38 +125,22 @@ end
 // output data mux
 always @ (posedge clk) begin
     if (!run) begin
-        l_frontEnd_data <= 0;
-        r_frontEnd_data <= 0;
-        l_frontEnd_valid <= 0;
-        r_frontEnd_valid <= 0;
+        frontEnd_data <= 0;
+        data_valid_out <= 0;
      end
     else begin
-        if (data_out_select == 0) begin
-            l_frontEnd_valid <= l_pcm_valid;
-            r_frontEnd_valid <= r_pcm_valid;
-        end
-        else begin
-            l_frontEnd_valid <= data_valid;
-            r_frontEnd_valid <= data_valid;
-        end
+        data_valid_out <= data_valid;        // 1 clk delay
 //      SW command:     feTest
         if (data_valid) begin
             case (data_out_select)
-                0: begin
-                    l_frontEnd_data <= l_pcm_data;               
-                    r_frontEnd_data <= r_pcm_data;
-                end         
                 1: begin    // positive dc value
-                    l_frontEnd_data <= 24'h7fff00;
-                    r_frontEnd_data <= 24'h7fff00;
+                    frontEnd_data <= 24'h7fff00;
                 end
                 2:  begin    // negative dc value
-                    l_frontEnd_data <= 24'h8000ff;
-                    r_frontEnd_data <= 24'h8000ff;
+                    frontEnd_data <= 24'h8000ff;
                 end
                 3:  begin
-                    l_frontEnd_data <= triangle_count;
-                    r_frontEnd_data <= triangle_count;
+                    frontEnd_data <= triangle_count;
 /*                    
                     l_frontEnd_data[23] <= !triangle_count[23];     // define sign bit
                     l_frontEnd_data[22:0] <= triangle_count[22:0];
@@ -168,8 +151,7 @@ always @ (posedge clk) begin
             endcase
         end
         else begin
-            l_frontEnd_data <= l_frontEnd_data;
-            r_frontEnd_data <= r_frontEnd_data;
+            frontEnd_data <= frontEnd_data;
         end
     end
 end
