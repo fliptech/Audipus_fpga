@@ -28,7 +28,6 @@ module I2S_to_PCM_Converter # (
     input               bclk,
     input               lrclk,
     input               i2s_data,
-    input [1:0]         test_sel,
     output              dout_valid,       // strobe
     output [23:0]       l_pcm_data,
     output [23:0]       r_pcm_data,
@@ -113,9 +112,13 @@ always @ (posedge clk) begin
 end
     
 
-// bypass utill tested
+/* bypass utill tested
 assign  l_pcm_data =  (test_sel == 3) ? l_scaled_d : l_d_out;
 assign  r_pcm_data =  (test_sel == 3) ? r_scaled_d : r_d_out;
+*/
+
+assign  l_pcm_data =  l_scaled_d;
+assign  r_pcm_data =  r_scaled_d;
         
 // BARREL SHIFTER <<< check this
 
@@ -137,7 +140,7 @@ always @ (posedge clk) begin
         end
     end
     1: begin     
-        if (test_sel == 3) begin
+//        if (test_sel == 3) begin
             if (shift_bit_cnt < (MAX_NUM_OF_INPUT_BITS - 1)) begin
                 shift_bit_cnt <= shift_bit_cnt + 1;
                 l_scaled_d[0] <= 1'b0;
@@ -152,13 +155,12 @@ always @ (posedge clk) begin
                 r_scaled_d <= r_scaled_d;
                 state = 0;
             end   
-        end
-        else begin
-            shift_bit_cnt <= bit_cnt_reg;
-            l_scaled_d <= l_scaled_d;
-            r_scaled_d <= r_scaled_d;
-            state = 0;
-        end
+//        end
+//        else begin
+//           shift_bit_cnt <= bit_cnt_reg;
+//            l_scaled_d <= l_scaled_d;
+//            r_scaled_d <= r_scaled_d;
+//            state = 0;
     end
     endcase
 end

@@ -132,7 +132,6 @@ I2S_to_PCM_Converter i2s_to_pcm(
     .bclk           (i2s_bclk),         // input
     .lrclk          (i2s_lrclk),        // input
     .i2s_data       (i2s_d),            // input
-    .test_sel       (test_d_select[1:0]), // 3 = shift
     .dout_valid     (i2sToPcm_valid),   // output strobe     
     .l_pcm_data     (l_pcm_data),       // [23:0] output
     .r_pcm_data     (r_pcm_data),       // [23:0] output
@@ -291,7 +290,7 @@ PCM_to_I2S_Converter pcm_to_i2s(
 // test from mux
 assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
                         (test_d_select == 1) ? {r_frontEnd_data[16:4], i2s_d, i2s_lrclk, i2s_bclk} :
-                        (test_d_select == 2) ? r_intrp_d_out[33:18] :
+                        (test_d_select == 2) ? {r_intrp_d_out[33:15], r_frontEnd_data[23], intrp_dout_valid, frontEnd_valid} :
                         (test_d_select == 3) ? {r_frontEnd_data[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
                         0
 ;

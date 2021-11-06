@@ -305,16 +305,16 @@ interpolator_subtractor l_interp_sub (
 interp_mult l_interp_mult (
     .CLK    (clk),              // input wire CLK
     .CE     (mult_en),          // input wire CE
-    .A      (l_mult_din),       // input wire [23 : 0] B
-    .B      (mult_coef),        // input wire [10 : 0] A
+    .A      (l_mult_din),       // input wire [23 : 0] A signed
+    .B      (mult_coef),        // input wire [10 : 0] B
     .P      (l_mult_dout)       // output wire [34 : 0] P);
  );
    
 interp_mult r_interp_mult (
     .CLK    (clk),              // input wire CLK
     .CE     (mult_en),          // input wire CE
-    .A      (r_mult_din),       // input wire [23 : 0] B
-    .B      (mult_coef),        // input wire [10 : 0] A
+    .A      (r_mult_din),       // input wire [23 : 0] A signed
+    .B      (mult_coef),        // input wire [10 : 0] B
     .P      (r_mult_dout)       // output wire [34 : 0] P);
  );
    
