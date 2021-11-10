@@ -39,7 +39,8 @@ module LinearInterpolator(
     input           din_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
-    output reg      dout_valid,
+    output          l_dout_valid,
+    output          r_dout_valid,
     output [33:0]   l_data_out,
     output [33:0]   r_data_out,
     // for test
@@ -54,7 +55,7 @@ reg [23:0]   l_intrp_data[1:0];
 reg [23:0]   r_intrp_data[1:0];
 //reg [10:0]   intrp_coef[1:0];
 reg [10:0]  mult_coef;
-reg         mult_en, dout_en, coef_sub_en, adder_en;
+reg         mult_en, dout_en, coef_sub_en, adder_en, div_en;
 // reg [2:0]   interp_cnt;
 reg [23:0]  l_mult_din, r_mult_din;
 reg [34:0]  l_mult_dout, r_mult_dout;
@@ -66,6 +67,15 @@ reg [10:0]   sample_96KHz_count;
 reg [10:0]   interp_sub_result;
 reg [10:0]   interp_test_reg;
 
+wire [33:0] l_accum_out, r_accum_out;
+wire [47:0] l_div_out, r_div_out;
+wire        l_div_valid, r_div_valid;
+
+/// Output Assignments \\\
+assign  l_data_out = l_div_out[39:16];
+assign  r_data_out = r_div_out[39:16];
+assign  l_dout_valid = l_div_valid;
+assign  r_dout_valid = r_div_valid;
 
 parameter sample_96KHz_max = 11'h1ff;      // divide by 512 for 96KHz (programmabe later?)
 
@@ -150,7 +160,7 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             coef_sub_en <= 1'b1;       // subtractor left enabled
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
+            div_en <= 1'b0;
             
             if (dout_en) begin          // move out of idle  
                 interp_state <= 3'h1;
@@ -177,7 +187,7 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;        // disable subtractor
             mult_en <= 1'b1;            // enable mult_en
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
+            div_en <= 1'b0;
 
             l_mult_din <= l_intrp_data[0];
             r_mult_din <= r_intrp_data[0];
@@ -195,7 +205,7 @@ always @ (posedge clk) begin
             coef_sub_en <= 1'b0;
             mult_en <= 1'b1;            // enable mult_en
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
+            div_en <= 1'b0;
 
             coef_sub_sample <= coef_sub_sample;               
             l_mult_din <= l_intrp_data[1];
@@ -213,8 +223,8 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
-            
+            div_en <= 1'b0;
+             
             l_dout_B <= l_mult_dout[34:2];
             r_dout_B <= r_mult_dout[34:2];
             l_dout_A <= l_dout_A; 
@@ -231,7 +241,7 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
             adder_en <= 1'b1;
-            dout_valid <= 1'b0;         // enable dout_vaild
+            div_en <= 1'b0;
             
             l_dout_A <= l_mult_dout[34:2];
             r_dout_A <= r_mult_dout[34:2];
@@ -249,8 +259,16 @@ always @ (posedge clk) begin
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
-            dout_valid <= 1'b1;
              
+            if (r_divisor_ready && r_dividend_ready && l_divisor_ready && l_dividend_ready) begin
+                interp_state <= 3'h6;
+                div_en <= 1'b1;
+             end
+             else begin
+                interp_state <= 3'h5;
+                div_en <= 1'b0;
+             end
+            
             l_dout_A <= l_dout_A; 
             r_dout_A <= r_dout_A; 
             l_dout_B <= l_dout_B; 
@@ -263,23 +281,42 @@ always @ (posedge clk) begin
             interp_test_reg <= r_intrp_data[1][23:13];           
         end
         3'h6: begin
-            interp_state <= 3'h0;
+            interp_state <= 3'h7;
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
+            div_en <= 1'b0;
                 
             coef_sub_sample <= coef_sub_sample;               
             l_intrp_data <= l_intrp_data;
             r_intrp_data <= r_intrp_data;
             
-            interp_test_reg <= r_data_out[33:23];           
+            interp_test_reg <= r_accum_out[33:23];           
+        end
+        3'h7: begin
+            
+            mult_en <= 1'b0;
+            coef_sub_en <= 1'b0;
+            adder_en <= 1'b0;
+                 
+            coef_sub_sample <= coef_sub_sample;               
+            l_intrp_data <= l_intrp_data;
+            r_intrp_data <= r_intrp_data;
+            
+            if (r_div_valid) begin
+                interp_state <= 3'h0;
+                interp_test_reg <= r_data_out[23:13]; 
+            end
+            else begin
+                interp_state <= 3'h7;
+                interp_test_reg <= r_accum_out[33:23]; 
+            end              
         end
         default: begin
             mult_en <= 1'b0;
             coef_sub_en <= 1'b0;       // disable subtractor
             adder_en <= 1'b0;
-            dout_valid <= 1'b0;
+            div_en <= 1'b0;
             interp_state <= 3'h0;
                 
             coef_sub_sample <= coef_sub_sample;               
@@ -323,7 +360,7 @@ Interpolator_adder l_interp_add (
   .B            (l_dout_B),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
   .CE           (adder_en),             // input wire CE
-  .S            (l_data_out)            // output wire [33 : 0] S
+  .S            (l_accum_out)            // output wire [33 : 0] S
 );
 
 Interpolator_adder r_interp_add (
@@ -331,9 +368,35 @@ Interpolator_adder r_interp_add (
   .B            (r_dout_B),            // input wire [32 : 0] B
   .CLK          (clk),                  // input wire CLK
   .CE           (adder_en),               // input wire CE
-  .S            (r_data_out)            // output wire [33 : 0] S
+  .S            (r_accum_out)            // output wire [33 : 0] S
 );
 
+// Quotient = Dividend / Divisor
+// Output = interpolator_data / input_max_sample_count
+// right
+interpolationScaler_divider r_interp_divider (
+    .aclk                   (clk),                                  // input
+    .s_axis_divisor_tvalid  (div_en),                               // input
+    .s_axis_divisor_tready  (r_divisor_ready),                      // output
+    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0]
+    .s_axis_dividend_tvalid (div_en),                               // input
+    .s_axis_dividend_tready (r_dividend_ready),                     // output
+    .s_axis_dividend_tdata  (r_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata
+    .m_axis_dout_tvalid     (r_div_valid),                          // output
+    .m_axis_dout_tdata      (r_div_out)                            // output[47 : 0]; 47:16 data, 10:0 remainder
+);
+// left
+interpolationScaler_divider l_interp_divider (
+    .aclk                   (clk),                                  // input
+    .s_axis_divisor_tvalid  (div_en),                               // input
+    .s_axis_divisor_tready  (l_divisor_ready),                      // output
+    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0]
+    .s_axis_dividend_tvalid (div_en),                               // input
+    .s_axis_dividend_tready (l_dividend_ready),                     // output
+    .s_axis_dividend_tdata  (l_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata
+    .m_axis_dout_tvalid     (l_div_valid),                          // output
+    .m_axis_dout_tdata      (l_div_out)                            // output[47 : 0]; 47:16 data, 10:0 remainder
+);
 
 //      TEST
 

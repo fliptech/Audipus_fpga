@@ -68,7 +68,7 @@ wire pcmToI2S_bclk;
 wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
 wire l_eq_valid, r_eq_valid;
-wire sin_wave_valid, intrp_dout_valid;
+wire sin_wave_valid, l_intrp_dout_valid, r_intrp_dout_valid;
 wire fir_wr_addr_zero, eq_wr_addr_zero;
  
 wire        i2sToPcm_valid;
@@ -161,7 +161,8 @@ LinearInterpolator i2s_interpolator (
     .l_data_in          (l_frontEnd_data),     // [23:0] input
     .r_data_in          (r_frontEnd_data),     // [23:0] input
 //  Outputs
-    .dout_valid         (intrp_dout_valid), // output
+    .l_dout_valid       (l_intrp_dout_valid), // output
+    .r_dout_valid       (r_intrp_dout_valid), // output
     .l_data_out         (l_intrp_d_out),    // [33:0] output
     .r_data_out         (r_intrp_d_out),     // [33:0] output
 // for test
@@ -180,8 +181,8 @@ FIR_Filters filters (
     .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
     .wr_addr_zero       (fir_wr_addr_zero),     // output
     // input signals
-    .l_data_en          (intrp_dout_valid),     // input enable strobe 
-    .r_data_en          (intrp_dout_valid),     // input enable strobe 
+    .l_data_en          (l_intrp_dout_valid),     // input enable strobe 
+    .r_data_en          (r_intrp_dout_valid),     // input enable strobe 
     .l_data_in          (l_intrp_d_out[33:10]),           // [23:0] input
     .r_data_in          (r_intrp_d_out[33:10]),           // [23:0] input
     // output signals
@@ -298,7 +299,7 @@ assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_
 
 assign test_dout_valid =    (test_d_select == 0) ? 1'b1 :
                             (test_d_select == 1) ? frontEnd_valid :
-                            (test_d_select == 2) ? intrp_dout_valid :
+                            (test_d_select == 2) ? r_intrp_dout_valid :
                             (test_d_select == 3) ? frontEnd_valid :
                             0
 ;
