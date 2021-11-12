@@ -37,12 +37,13 @@ module LinearInterpolator(
     input           reset_n,
     input           run,
     input           din_en,
+    input[1:0]      out_sel,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
     output          l_dout_valid,
     output          r_dout_valid,
-    output [33:0]   l_data_out,
-    output [33:0]   r_data_out,
+    output [23:0]   l_data_out,
+    output [23:0]   r_data_out,
     // for test
     output [15:0]       test_data 
 );
@@ -76,6 +77,13 @@ assign  l_data_out = l_div_out[39:16];
 assign  r_data_out = r_div_out[39:16];
 assign  l_dout_valid = l_div_valid;
 assign  r_dout_valid = r_div_valid;
+
+/* /// for test \\\
+assign  r_data_out =    (out_sel == 0) ? r_div_out[47:24] :     // test view [47:37]
+                        (out_sel == 1) ? r_div_out[36:13] :     // test view [36:26]     
+                        (out_sel == 2) ? r_div_out[26:3] :      // test view [26:16]
+                        0;
+*/
 
 parameter sample_96KHz_max = 11'h1ff;      // divide by 512 for 96KHz (programmabe later?)
 
@@ -378,7 +386,7 @@ interpolationScaler_divider r_interp_divider (
     .aclk                   (clk),                                  // input
     .s_axis_divisor_tvalid  (div_en),                               // input
     .s_axis_divisor_tready  (r_divisor_ready),                      // output
-    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0]
+    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0], bit 11 is the sign bit
     .s_axis_dividend_tvalid (div_en),                               // input
     .s_axis_dividend_tready (r_dividend_ready),                     // output
     .s_axis_dividend_tdata  (r_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata
@@ -390,7 +398,7 @@ interpolationScaler_divider l_interp_divider (
     .aclk                   (clk),                                  // input
     .s_axis_divisor_tvalid  (div_en),                               // input
     .s_axis_divisor_tready  (l_divisor_ready),                      // output
-    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0]
+    .s_axis_divisor_tdata   ({5'b00000, input_max_sample_count}),   // input[15 : 0], bit 11 is the sign bit
     .s_axis_dividend_tvalid (div_en),                               // input
     .s_axis_dividend_tready (l_dividend_ready),                     // output
     .s_axis_dividend_tdata  (l_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata

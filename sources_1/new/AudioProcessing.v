@@ -77,7 +77,7 @@ wire        l_fir_data_valid, r_fir_data_valid;
 wire        l_mux_valid, r_mux_valid;
 wire [23:0] l_pcm_data, r_pcm_data;
 wire [23:0] l_mux_out, r_mux_out;
-wire [33:0] l_intrp_d_out, r_intrp_d_out;
+wire [23:0] l_intrp_d_out, r_intrp_d_out;
 wire [23:0] wave_out, l_eq_out, r_eq_out;
 wire [47:0] l_fir_data_out[num_of_filters - 1 :0], r_fir_data_out[num_of_filters - 1 :0];
 wire [9:0]  sub_sample_cnt;
@@ -158,13 +158,14 @@ LinearInterpolator i2s_interpolator (
     .reset_n            (reset_n),          // input
     .run                (audio_enable),     // input
     .din_en             (frontEnd_valid),       // input
+    .out_sel            (triangle_inc_reg[1:0]), //input[1:0]
     .l_data_in          (l_frontEnd_data),     // [23:0] input
     .r_data_in          (r_frontEnd_data),     // [23:0] input
 //  Outputs
     .l_dout_valid       (l_intrp_dout_valid), // output
     .r_dout_valid       (r_intrp_dout_valid), // output
-    .l_data_out         (l_intrp_d_out),    // [33:0] output
-    .r_data_out         (r_intrp_d_out),     // [33:0] output
+    .l_data_out         (l_intrp_d_out),    // [23:0] output
+    .r_data_out         (r_intrp_d_out),     // [23:0] output
 // for test
     .test_data          (interp_test_d)     // [15:0] output
 );
@@ -183,8 +184,8 @@ FIR_Filters filters (
     // input signals
     .l_data_en          (l_intrp_dout_valid),     // input enable strobe 
     .r_data_en          (r_intrp_dout_valid),     // input enable strobe 
-    .l_data_in          (l_intrp_d_out[33:10]),           // [23:0] input
-    .r_data_in          (r_intrp_d_out[33:10]),           // [23:0] input
+    .l_data_in          (l_intrp_d_out),           // [23:0] input
+    .r_data_in          (r_intrp_d_out),           // [23:0] input
     // output signals
     .l_data_valid       (l_fir_data_valid),     // output valid strobe
     .r_data_valid       (r_fir_data_valid),     // output valid strobe
@@ -250,8 +251,8 @@ AudioMux aud_output_mux(
     // interpolator to pcm_to_i2s modules
     .l_interp_d_en          (intrp_dout_valid), // input
     .r_interp_d_en          (intrp_dout_valid), // input
-    .l_interp_d             (l_intrp_d_out[33:10]),    // [23:0] input
-    .r_interp_d             (r_intrp_d_out[33:10]),    // [23:0] input
+    .l_interp_d             (l_intrp_d_out),    // [23:0] input
+    .r_interp_d             (r_intrp_d_out),    // [23:0] input
     
     // test sin wave to pcm_to_i2s modules
     .sin_wave_d_en          (sin_wave_valid),   // input, for both l & r
@@ -291,7 +292,7 @@ PCM_to_I2S_Converter pcm_to_i2s(
 // test from mux
 assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
                         (test_d_select == 1) ? {r_frontEnd_data[16:4], i2s_d, i2s_lrclk, i2s_bclk} :
-                        (test_d_select == 2) ? {r_intrp_d_out[33:15], r_frontEnd_data[23], intrp_dout_valid, frontEnd_valid} :
+                        (test_d_select == 2) ? {r_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
                         (test_d_select == 3) ? {r_frontEnd_data[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
                         0
 ;
