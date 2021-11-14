@@ -73,8 +73,8 @@ wire [47:0] l_div_out, r_div_out;
 wire        l_div_valid, r_div_valid;
 
 /// Output Assignments \\\
-assign  l_data_out = l_div_out[39:16];
-assign  r_data_out = r_div_out[39:16];
+assign  l_data_out = l_div_out[31:8];
+assign  r_data_out = r_div_out[31:8];
 assign  l_dout_valid = l_div_valid;
 assign  r_dout_valid = r_div_valid;
 
@@ -391,7 +391,7 @@ interpolationScaler_divider r_interp_divider (
     .s_axis_dividend_tready (r_dividend_ready),                     // output
     .s_axis_dividend_tdata  (r_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata
     .m_axis_dout_tvalid     (r_div_valid),                          // output
-    .m_axis_dout_tdata      (r_div_out)                            // output[47 : 0]; 47:16 data, 10:0 remainder
+    .m_axis_dout_tdata      (r_div_out)                            // output[47 : 0]; 43:12 data, 11:0 fraction
 );
 // left
 interpolationScaler_divider l_interp_divider (
@@ -403,7 +403,7 @@ interpolationScaler_divider l_interp_divider (
     .s_axis_dividend_tready (l_dividend_ready),                     // output
     .s_axis_dividend_tdata  (l_accum_out[33:2]),                    // input[31 : 0] s_axis_dividend_tdata
     .m_axis_dout_tvalid     (l_div_valid),                          // output
-    .m_axis_dout_tdata      (l_div_out)                            // output[47 : 0]; 47:16 data, 10:0 remainder
+    .m_axis_dout_tdata      (l_div_out)                            // output[47 : 0]; 43:12 data, 11:0 fraction
 );
 
 //      TEST
