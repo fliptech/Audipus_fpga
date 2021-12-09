@@ -244,7 +244,7 @@ parameter num_of_filters = 4;
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
         //output i2s
-        .audio_enable       (~dac_rst),
+        .audio_enable       (!dac_rst),
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),

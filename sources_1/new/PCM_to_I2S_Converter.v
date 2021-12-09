@@ -98,10 +98,11 @@ always @ (posedge clk) begin    // clk freq = 49.152MHz
     end
 end
 
+// load FIFO till half-filled
 always @ (posedge clk) begin    // clk freq = 49.152MHz
-    if (r_fifo_empty || !audio_en) 
+    if (r_fifo_empty || l_fifo_empty || !audio_en) 
         i2s_valid <= 1'b0;
-    else if (r_half_full) 
+    else if (r_half_full && l_half_full) 
         i2s_valid <= 1'b1;
     else
         i2s_valid <= i2s_valid;

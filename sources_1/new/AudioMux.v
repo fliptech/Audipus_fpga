@@ -62,30 +62,35 @@ always @ (posedge clk) begin
             2'b00: begin
                 l_pcmToI2s_d_valid <= l_i2sToPcm_d_en;
                 r_pcmToI2s_d_valid <= r_i2sToPcm_d_en;
+                
                 if (l_i2sToPcm_d_en)
                     l_pcmToI2s_d <= l_i2sToPcm_d;
-                else if (r_i2sToPcm_d_en)
-                    r_pcmToI2s_d <= r_i2sToPcm_d;
-                else begin
+                else
                     l_pcmToI2s_d <= l_pcmToI2s_d;
+                    
+                if (r_i2sToPcm_d_en)
+                    r_pcmToI2s_d <= r_i2sToPcm_d;
+                else
                     r_pcmToI2s_d <= r_pcmToI2s_d;
-                end
             end
             2'b01: begin
                 l_pcmToI2s_d_valid <= l_interp_d_en;
                 r_pcmToI2s_d_valid <= r_interp_d_en;
+                
                 if (l_interp_d_en)
                     l_pcmToI2s_d <= l_interp_d;
-                else if (r_interp_d_en)
-                    r_pcmToI2s_d <= r_interp_d;
-                else begin
+                else
                     l_pcmToI2s_d <= l_pcmToI2s_d;
+                    
+                if (r_interp_d_en)
+                    r_pcmToI2s_d <= r_interp_d;
+                else
                     r_pcmToI2s_d <= r_pcmToI2s_d;
-                end
             end
             2'b10: begin
                 l_pcmToI2s_d_valid <= sin_wave_d_en;
                 r_pcmToI2s_d_valid <= sin_wave_d_en;
+                
                 if (sin_wave_d_en) begin
                     l_pcmToI2s_d <= sin_wave_d;
                     r_pcmToI2s_d <= sin_wave_d;
@@ -98,14 +103,16 @@ always @ (posedge clk) begin
             2'b11: begin
                 l_pcmToI2s_d_valid <= l_eq_d_en;
                 r_pcmToI2s_d_valid <= r_eq_d_en;
+                
                 if (l_eq_d_en)
                     l_pcmToI2s_d <= l_eq_d;
-                else if (r_eq_d_en)
-                    r_pcmToI2s_d <= r_eq_d;
-                else begin
+                else
                     l_pcmToI2s_d <= l_pcmToI2s_d;
+                    
+                if (r_eq_d_en)
+                    r_pcmToI2s_d <= r_eq_d;
+                else
                     r_pcmToI2s_d <= r_pcmToI2s_d;
-                end
             end
         endcase
     end

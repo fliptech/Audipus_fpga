@@ -242,15 +242,15 @@ AudioMux aud_output_mux(
     .run                    (audio_enable),     // input
     .select                 (audio_mux_sel),    // [1:0] input
     
-    // i2s_To_Pcm to pcm_to_i2s modules
-    .l_i2sToPcm_d_en        (l_i2sToPcm_valid), // input
-    .r_i2sToPcm_d_en        (r_i2sToPcm_valid), // input
-    .l_i2sToPcm_d           (l_pcm_data),       // [23:0] input
-    .r_i2sToPcm_d           (r_pcm_data),       // [23:0] input
+    // front end to pcm_to_i2s modules
+    .l_i2sToPcm_d_en        (frontEnd_valid), // input
+    .r_i2sToPcm_d_en        (frontEnd_valid), // input
+    .l_i2sToPcm_d           (l_frontEnd_data),       // [23:0] input
+    .r_i2sToPcm_d           (r_frontEnd_data),       // [23:0] input
     
     // interpolator to pcm_to_i2s modules
-    .l_interp_d_en          (intrp_dout_valid), // input
-    .r_interp_d_en          (intrp_dout_valid), // input
+    .l_interp_d_en          (l_intrp_dout_valid), // input
+    .r_interp_d_en          (r_intrp_dout_valid), // input
     .l_interp_d             (l_intrp_d_out),    // [23:0] input
     .r_interp_d             (r_intrp_d_out),    // [23:0] input
     
@@ -258,7 +258,7 @@ AudioMux aud_output_mux(
     .sin_wave_d_en          (sin_wave_valid),   // input, for both l & r
     .sin_wave_d             (wave_out),         // [23:0] input
     
-    // equalizer to pcm_to_i2s modules
+    // equalizer to pcm_to_i2s modules: normal mode
     .l_eq_d_en              (l_eq_valid),       // input
     .r_eq_d_en              (r_eq_valid),       // input
     .l_eq_d                 (l_eq_out),         // [23:0] input
@@ -290,17 +290,20 @@ PCM_to_I2S_Converter pcm_to_i2s(
 
 //  TEST
 // test from mux
-assign test_data_out =  (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
-                        (test_d_select == 1) ? {r_frontEnd_data[16:4], i2s_d, i2s_lrclk, i2s_bclk} :
-                        (test_d_select == 2) ? {r_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
-                        (test_d_select == 3) ? {r_frontEnd_data[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
+assign test_data_out =  
+//                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
+                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
+                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
+//                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
+                        (test_d_select == 2) ? {l_mux_out[23:11], dac_data, dac_lrclk, l_mux_valid} :
+                        (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
                         0
 ;
 
 
 assign test_dout_valid =    (test_d_select == 0) ? 1'b1 :
-                            (test_d_select == 1) ? frontEnd_valid :
-                            (test_d_select == 2) ? r_intrp_dout_valid :
+                            (test_d_select == 1) ? 1'b1 :
+                            (test_d_select == 2) ? l_intrp_dout_valid :
                             (test_d_select == 3) ? frontEnd_valid :
                             0
 ;
