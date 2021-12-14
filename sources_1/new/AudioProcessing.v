@@ -39,7 +39,7 @@ module AudioProcessing #(
 //    output reg sram_spi_cs,
 //    output reg sram_spi_clk,
 //    inout [3:0] sram_spi_sio,
-    // cpu registers 
+    // cpu registers
     input       coef_wr_en,
     input       eq_wr_en,
     input [7:0] audio_control,      // cpu reg
@@ -87,10 +87,11 @@ wire        frontEnd_valid;
 wire [23:0] l_frontEnd_data, r_frontEnd_data;
 
 /////// audio control register ////////
-assign audio_enable =     audio_control[0];
-wire [1:0] test_d_select =  audio_control[2:1];
+assign      audio_enable =  audio_control[0];
+wire [1:0]  audio_mux_sel = audio_control[2:1];
+wire        coef_addr_rst = audio_control[7];
 /////// test control register ////////
-wire [1:0] audio_mux_sel =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
+wire [1:0] test_d_select =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
 wire output_test_en =       test_reg[2];   // [4] selects a fixed output pattern
 wire eq_bypass =            test_reg[3];   // [3] bypasses equalizer (for fir tests)
 wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
@@ -100,6 +101,9 @@ wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 wire sin_test_en = (test_reg[1:0] == 2'b10);
 
 wire [10:0] smp_clken_count;
+
+wire [15:0] fir_test_data;
+wire        fir_test_en;
 
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
@@ -175,6 +179,7 @@ FIR_Filters filters (
     .reset_n            (reset_n),              // input
     .audio_en           (audio_enable),             // input, from audio_control reg
     // coefficient signals
+    .coef_addr_rst      (),
     .coefficient_wr_en  (coef_wr_en),           // input stb when coef wr data in valid
     .coef_select        (filter_select[3:0]),   // [num_of_filters - 1:0] input
     .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg
@@ -190,7 +195,9 @@ FIR_Filters filters (
     .l_data_valid       (l_fir_data_valid),     // output valid strobe
     .r_data_valid       (r_fir_data_valid),     // output valid strobe
     .l_data_out         (l_fir_data_out),       // [47:0][num_of_filters] output
-    .r_data_out         (r_fir_data_out)        // [47:0][num_of_filters] output
+    .r_data_out         (r_fir_data_out),        // [47:0][num_of_filters] output
+    .test_data          (fir_test_data),
+    .fir_test_en        (fir_test_en)
 );
 
 // Audio_SRAM_Interface () ->> to do
@@ -292,16 +299,17 @@ PCM_to_I2S_Converter pcm_to_i2s(
 // test from mux
 assign test_data_out =  
 //                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
-                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
+//                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
                         (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
 //                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
                         (test_d_select == 2) ? {l_mux_out[23:11], dac_data, dac_lrclk, l_mux_valid} :
                         (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
+                        (test_d_select == 0) ? fir_test_data :                       
                         0
 ;
 
 
-assign test_dout_valid =    (test_d_select == 0) ? 1'b1 :
+assign test_dout_valid =    (test_d_select == 0) ? fir_test_en :
                             (test_d_select == 1) ? 1'b1 :
                             (test_d_select == 2) ? l_intrp_dout_valid :
                             (test_d_select == 3) ? frontEnd_valid :

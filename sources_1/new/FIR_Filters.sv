@@ -27,7 +27,7 @@ module FIR_Filters #(
     input           reset_n,
     input           audio_en,
     // coefficient signals   
-//    input           coef_rst,
+    input           coef_addr_rst,
     input           coefficient_wr_en,
     input [3:0]     coef_select,        // selects which coefficient RAM to write to
     input [7:0]     coef_wr_lsb_data,
@@ -43,13 +43,16 @@ module FIR_Filters #(
     output          l_data_valid,
     output          r_data_valid,
     output [47:0]   l_data_out[num_of_filters - 1 :0],
-    output [47:0]   r_data_out[num_of_filters - 1 :0]
+    output [47:0]   r_data_out[num_of_filters - 1 :0],
+    output [15:0]   test_data,
+    output          fir_test_en
      
 );
 
 reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
-reg fir_en, fir_valid_stb;
+reg fir_en, fir_valid_stb, data_en, data_armed;
 reg [7:0] coef_wr_addr;
+
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
 wire [15:0] coefficients[num_of_filters - 1 : 0];
@@ -64,21 +67,15 @@ assign wr_addr_zero = (coef_wr_addr == 0);
 // coefficient write address generator
 //      auto increments coef_wr_addr after every write
 always @ (posedge clk) begin 
-    if (!reset_n) begin
+    if (!reset_n || coef_addr_rst)
         coef_wr_addr <= 0;
-    end
-    else begin
-        if (coefficient_wr_en) begin                            // msb wr enable
-            if (coef_wr_addr == taps_per_filter)
-                coef_wr_addr <= 0;
-            else      
-                coef_wr_addr <= coef_wr_addr + 1;
-            end
-        else 
-            coef_wr_addr <= coef_wr_addr;        
-    end        
+    else if (coefficient_wr_en)
+        coef_wr_addr <= coef_wr_addr + 1;
+    else
+        coef_wr_addr <= coef_wr_addr;        
 end
             
+
 
 
 
@@ -91,12 +88,12 @@ always @ (posedge clk) begin
     end
     else begin
 //      if (buf_rd_counter == (taps_per_filter - 1)) begin
-        if (r_data_en) begin            // if new audio sample (both left & right) strobe 
+        if (data_en) begin            // if new audio sample (both left & right) strobe 
             buf_rd_counter <= 0;
             buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
         end
-        else if (fir_en) begin          //  if fir processing enabled 1 clk after r_data_en           
+        else if (fir_en) begin          //  if fir processing enabled 1 clk after data_en           
             buf_rd_counter <= buf_rd_counter + 1; 
             buf_rd_addr <= buf_rd_addr + 1;
             buf_pntr <= buf_pntr;
@@ -109,13 +106,41 @@ always @ (posedge clk) begin
     end        
 end
 
+// data_en control
+always @ (posedge clk) begin
+    if (!reset_n || !audio_en) begin
+        data_en <= 1'b0;
+        data_armed <= 1'b0;
+    end
+    else begin    
+        if (r_data_en && l_data_en) begin       // both simultaneously
+            data_en <= 1'b1;
+            data_armed <= 1'b0;
+        end
+        else if (r_data_en || l_data_en) begin
+            if (!data_armed) begin               // arm on 1st enable (l or r)
+                data_armed <= 1'b1;
+                data_en <= 1'b0;
+            end
+            else begin                          // both l & r enabled (at slightly diffrerent times)
+                data_armed <= 1'b0;
+                data_en <= 1'b1;
+            end
+        end
+        else begin
+            data_armed <= data_armed;
+            data_en <= 1'b0;
+        end
+    end                
+end
+
 // fir_en control
 always @ (posedge clk) begin
     if (!reset_n || !audio_en) begin
         fir_en <= 1'b0;
         fir_valid_stb <= 1'b0;
     end
-    else if (r_data_en)  begin          // if new audio sample (both left & right)
+    else if (data_en)  begin          // strobe: if new audio sample (both left & right)
         fir_en <= 1'b1;
         fir_valid_stb <= 1'b0;
     end
@@ -142,7 +167,7 @@ SignalPipeLineDelay fir_valid_delay (
 // left 2-port ram        
 circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_en),       // input wire we >>> r is correct <<<; wr to buf one clk before fir_en
+  .we(l_data_en),       // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [7 : 0] a (wr)
   .d(l_data_in),        // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
@@ -224,5 +249,11 @@ generate
     end     // for loop 
          
 endgenerate 
+
+// Test modules
+
+    assign test_data  =  coefficients[coef_select];
+    assign fir_test_en = fir_en;
+    
 
 endmodule
