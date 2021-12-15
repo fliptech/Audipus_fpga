@@ -179,7 +179,7 @@ FIR_Filters filters (
     .reset_n            (reset_n),              // input
     .audio_en           (audio_enable),             // input, from audio_control reg
     // coefficient signals
-    .coef_addr_rst      (),
+    .coef_addr_rst      (coef_addr_rst),        // resets coef wr addr
     .coefficient_wr_en  (coef_wr_en),           // input stb when coef wr data in valid
     .coef_select        (filter_select[3:0]),   // [num_of_filters - 1:0] input
     .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg

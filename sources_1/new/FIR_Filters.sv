@@ -49,7 +49,7 @@ module FIR_Filters #(
      
 );
 
-reg [7:0] buf_rd_addr, buf_rd_counter, buf_pntr;
+reg [8:0] buf_rd_addr, buf_rd_counter, buf_pntr;
 reg fir_en, fir_valid_stb, data_en, data_armed;
 reg [7:0] coef_wr_addr;
 
@@ -90,12 +90,15 @@ always @ (posedge clk) begin
 //      if (buf_rd_counter == (taps_per_filter - 1)) begin
         if (data_en) begin            // if new audio sample (both left & right) strobe 
             buf_rd_counter <= 0;
-            buf_pntr = buf_pntr - 1;    // for clkwise turn
+            if (buf_pntr == 0)
+                buf_pntr <= taps_per_filter - 1;
+            else
+                buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
         end
         else if (fir_en) begin          //  if fir processing enabled 1 clk after data_en           
-            buf_rd_counter <= buf_rd_counter + 1; 
-            buf_rd_addr <= buf_rd_addr + 1;
+            buf_rd_counter <= buf_rd_counter + 1;   // coef td addr
+            buf_rd_addr <= buf_rd_addr + 1;         // circular buf rd addr
             buf_pntr <= buf_pntr;
         end
         else begin
@@ -193,21 +196,6 @@ generate
     for (i = 0; i < num_of_filters; i = i + 1) 
     begin: fir_instantiate
 
-/*
-        FIR_coefficients fir_coef (
-            .clk                (clk),              // input
-            .reset_n            (reset_n),          // input
-            .coef_rst           (coef_rst),         // input
-            .wr_en              (coef_wr_en[i]),    // input
-            .rd_en              (fir_en),           // input 
-            .coef_wr_lsb_data   (coef_wr_lsb_data), // [7:0] input   
-            .coef_wr_msb_data   (coef_wr_msb_data), // [7:0] input 
-            .taps_per_filter    (taps_per_filter),  // [7:0] input
-            .coef_rd_addr       (buf_rd_counter),   // [7:0] input
-            .wr_addr_zero       (wr_addr_zero),     // output
-            .coefficients       (coefficients[i])   // [15:0] output
-        );    
-*/       
   
  
         coef_ram FIR_coef_ram (
@@ -215,7 +203,7 @@ generate
             .we     (coef_wr_en[i]),                            // input wire we
             .a      (coef_wr_addr),                             // input wire [7 : 0] a
             .d      ({coef_wr_msb_data, coef_wr_lsb_data}),     // input wire [15 : 0] d
-            .dpra   (buf_rd_counter),                           // input wire [7 : 0] dpra
+            .dpra   (buf_rd_counter),                           // input wire [8 : 0] dpra
             .dpo    (coefficients[i])                           // output wire [15 : 0] dpo
         );           
                 
