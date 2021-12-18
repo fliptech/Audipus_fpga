@@ -49,7 +49,8 @@ module spi_Interface # (
     // Audio
     output reg [7:0]    audio_control_reg,
     output reg [7:0]    taps_per_filter_reg,
-    output reg [7:0]    filter_select_reg,
+    output reg [7:0]    eq_select_reg,
+    output reg [7:0]    coef_select_reg,
     output reg [7:0]    coef_wr_lsb_data_reg,
     output reg [7:0]    coef_wr_msb_data_reg,
     output reg [7:0]    eq_wr_lsb_data_reg,
@@ -73,7 +74,6 @@ module spi_Interface # (
     output [num_of_addr_bits-1:0]  spi_addr
 );
 
-reg filter_tap, filter;
       
 reg [num_of_data_bits-1:0]      spi_read_data;
 wire [num_of_data_bits-1:0]     spi_write_data;
@@ -90,9 +90,9 @@ wire [6:0] status_reg = 0;
 	parameter AUD_CONTROL      = 7'h00;    // Audio Control Reg
 	parameter AUD_STATUS       = 7'h01;    // Status, write only
 	parameter NUM_FIR_TAPS     = 7'h02;    // Number of taps per filter
-	parameter FILTER_SEL       = 7'h03;    // Filter to be accessed, max. number = parameter num_of_filters
-	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
-	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
+	parameter COEF_SEL         = 7'h03;    // Coefficient filter to be accessed, max. number = NUM_FIR_TAPS
+	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient lsb based on the COEF_SEL  
+	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient msb based on the COEF_SEL  
 	parameter AUX              = 7'h06;    // aux Reg
 	parameter SRAM_CONTROL     = 7'h07;    // page for sram
 	parameter SRAM_ADDR        = 7'h08;    // selects sram start address for auto-increment
@@ -101,14 +101,16 @@ wire [6:0] status_reg = 0;
 	parameter MPIO_CONTROL     = 7'h0b;    // selects: which MPIO to be accressed, IO direction for eack bit
 	parameter SPI_TO_MPIO      = 7'h0c;    // write, mpio->spi, for selected mpio and based on IO directions      
 	parameter MPIO_TO_SPI      = 7'h0d;    // read, spi->mpio for selected mpio and based on IO directions
-	parameter EQ_GAIN_LSB      = 7'h0e;    // FIR coeficient lsb based on the selected EQ and EQ_TAP_SEL   
-	parameter EQ_GAIN_MSB      = 7'h0f;    // FIR coeficient msb based on the selected EQ and EQ_TAP_SEL   
-	parameter STATUS           = 7'h10;    // Status, write only
-	parameter TEST             = 7'h11;    // test Reg
-	parameter INTERRUPT        = 7'h12;    // interrupt Reg, rd only, clears after read
-	parameter I2SPCM_BIT_CNT   = 7'h13;    // number of bits in the i2sToPcm data
-	parameter FE_TEST          = 7'h14;    // front end test Reg
-    parameter TRIANGLE_INC     = 7'h15;    // (fe) triangle test wave Reg
+	parameter EQ_SEL           = 7'h0e;    // Equailzer channel to be accessed, max. number = NUM_FIR_TAPS
+	parameter EQ_GAIN_LSB      = 7'h0f;    // FIR coeficient lsb based on the selected EQ_SEL   
+	parameter EQ_GAIN_MSB      = 7'h10;    // FIR coeficient msb based on the selected EQ_SEL   
+	parameter STATUS           = 7'h11;    // Status, write only
+	parameter TEST             = 7'h12;    // test Reg
+	parameter INTERRUPT        = 7'h13;    // interrupt Reg, rd only, clears after read
+	parameter I2SPCM_BIT_CNT   = 7'h14;    // number of bits in the i2sToPcm data
+	parameter FE_TEST          = 7'h15;    // front end test Reg
+    parameter TRIANGLE_INC     = 7'h16;    // (fe_test) triangle test wave Reg
+    parameter NUM_OF_COEF      = 7'h17;    // number of coefficients per tap (9 bit number)
 
 
 
@@ -139,9 +141,10 @@ always @ (posedge clk) begin
 //		if (selGeneral) begin
 			if (spi_addr == AUD_CONTROL)         audio_control_reg           <= spi_write_data;
 			else if (spi_addr == NUM_FIR_TAPS)   taps_per_filter_reg         <= spi_write_data;
-			else if (spi_addr == FILTER_SEL)     filter_select_reg           <= spi_write_data;
+			else if (spi_addr == COEF_SEL)       coef_select_reg             <= spi_write_data;
 			else if (spi_addr == FIR_COEF_LSB)   coef_wr_lsb_data_reg        <= spi_write_data;
 			else if (spi_addr == FIR_COEF_MSB)   coef_wr_msb_data_reg        <= spi_write_data;
+			else if (spi_addr == EQ_SEL)         eq_select_reg               <= spi_write_data;
 			else if (spi_addr == EQ_GAIN_LSB)    eq_wr_lsb_data_reg          <= spi_write_data;
 			else if (spi_addr == EQ_GAIN_MSB)    eq_wr_msb_data_reg          <= spi_write_data;
 			else if (spi_addr == SRAM_CONTROL)   sram_control_reg            <= spi_write_data;
@@ -163,7 +166,7 @@ always @ (posedge clk) begin
             (spi_addr == AUD_CONTROL)    ?   audio_control_reg :
             (spi_addr == AUD_STATUS)     ?   audio_status :
             (spi_addr == NUM_FIR_TAPS)   ?   taps_per_filter_reg :
-            (spi_addr == FILTER_SEL)     ?   filter_select_reg :
+            (spi_addr == COEF_SEL)       ?   coef_select_reg :
             (spi_addr == SRAM_CONTROL)   ?   sram_control_reg :
             (spi_addr == SRAM_ADDR)      ?   sram_start_addr_reg :
             (spi_addr == SRAM_TO_SPI)    ?   sram_to_spi_data :
@@ -176,6 +179,7 @@ always @ (posedge clk) begin
             (spi_addr == I2SPCM_BIT_CNT) ?   i2sToPcm_bit_reg :
             (spi_addr == FE_TEST)        ?   fe_test_reg :
             (spi_addr == TRIANGLE_INC)   ?   triangle_inc_reg :
+            (spi_addr == EQ_SEL)         ?   eq_select_reg :
             
             8'h99;
     end
@@ -184,8 +188,10 @@ always @ (posedge clk) begin
 end        
 
 always @ (posedge clk) begin
-    coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe;
-    eq_wr_stb <= (spi_addr == EQ_GAIN_MSB) && wr_strobe;
+    coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe; // SW IMPORTANT: FIR_COEF_LSB most always be written before FIR_COEF_LMSB
+
+    eq_wr_stb <= (spi_addr == EQ_GAIN_MSB) && wr_strobe;    // SW IMPORTANT: EQ_GAIN_LSB most always be written before EQ_GAIN_LMSB
+
 end
 
 

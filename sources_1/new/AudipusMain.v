@@ -85,7 +85,8 @@ parameter num_of_filters = 4;
     wire       eq_wr_en;
     wire [7:0] audio_status_reg;
     wire [7:0] audio_control_reg;
-    wire [7:0] filter_select_reg;
+    wire [7:0] eq_select_reg;
+    wire [7:0] coef_select_reg;
     wire [7:0] number_of_taps_reg;
     wire [7:0] fir_coef_msb, fir_coef_lsb;
 // sram connections 
@@ -257,10 +258,13 @@ parameter num_of_filters = 4;
         .coef_wr_en         (coef_wr_en),
         .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
-        .filter_select      (filter_select_reg),
-        .taps_per_filter    (number_of_taps_reg),
+        .taps_per_filter    (number_of_taps_reg),   // bits [5:0] taps, [7:6] coefs_per_tap_msb
+        .coef_select        (coef_select_reg),
+        .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg
+        .coefs_per_tap_msb  (coefs_per_tap_msb),    // [7:0] input, cpu reg
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
+        .eq_select          (eq_select_reg),
         .eq_wr_lsb_data     (eq_gain_lsb),
         .eq_wr_msb_data     (eq_gain_msb),
         .audio_status       (audio_status_reg),

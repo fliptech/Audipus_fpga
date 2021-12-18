@@ -43,10 +43,11 @@ module AudioProcessing #(
     input       coef_wr_en,
     input       eq_wr_en,
     input [7:0] audio_control,      // cpu reg
-    input [7:0] filter_select,      // cpu reg 
-    input [7:0] taps_per_filter,    // cpu reg
+    input [7:0] coef_select,        // cpu reg 
+    input [7:0] coefs_per_tap_lsb,  // cpu reg
     input [7:0] coef_wr_lsb_data,   // cpu reg
     input [7:0] coef_wr_msb_data,   // cpu reg
+    input [7:0] eq_select,          // cpu reg 
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
     input [7:0] test_reg,           // cpu reg
@@ -89,6 +90,7 @@ wire [23:0] l_frontEnd_data, r_frontEnd_data;
 /////// audio control register ////////
 assign      audio_enable =  audio_control[0];
 wire [1:0]  audio_mux_sel = audio_control[2:1];
+wire        coefs_per_tap_msb = audio_control[6];
 wire        coef_addr_rst = audio_control[7];
 /////// test control register ////////
 wire [1:0] test_d_select =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
@@ -181,10 +183,11 @@ FIR_Filters filters (
     // coefficient signals
     .coef_addr_rst      (coef_addr_rst),        // resets coef wr addr
     .coefficient_wr_en  (coef_wr_en),           // input stb when coef wr data in valid
-    .coef_select        (filter_select[3:0]),   // [num_of_filters - 1:0] input
+    .coef_select        (coef_select[5:0]),   // [num_of_filters - 1:0] input
     .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg
     .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
-    .taps_per_filter    (taps_per_filter),      // [7:0] input, cpu reg
+    .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg
+    .coefs_per_tap_msb  (coefs_per_tap_msb),    // input taken from audio_control[6]
     .wr_addr_zero       (fir_wr_addr_zero),     // output
     // input signals
     .l_data_en          (l_intrp_dout_valid),     // input enable strobe 
@@ -209,8 +212,8 @@ EqualizerGains eq_gain (
     .bypass         (eq_bypass),
     // cpu interface
     .eq_wr          (eq_wr_en),
-    .eq_wr_sel      (filter_select[3:0]),                 // input [num_of_filters - 1 : 0]     
-    .eq_rd_sel      (filter_select[7:4]),                 // input [num_of_filters - 1 : 0]     
+    .eq_wr_sel      (eq_select[3:0]),                 // input [num_of_filters - 1 : 0]     
+    .eq_rd_sel      (eq_select[7:4]),                 // input [num_of_filters - 1 : 0]     
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
     .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
     .wr_addr_zero   (eq_wr_addr_zero),                     // output status
