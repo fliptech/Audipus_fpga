@@ -35,8 +35,8 @@ module spi_Interface # (
 //  control signals
     output              rd_strobe,
     output              wr_strobe,
-    output reg          coef_wr_stb,
-    output reg          eq_wr_stb,
+    output reg          coef_wr_stb,    // strobed on MSB wr
+    output reg          eq_wr_stb,      // strobed on MSB wr
 //  input registers
     input [7:0]         status,         // {interrupt, staus_reg}
     input [7:0]         audio_status,  
@@ -48,11 +48,13 @@ module spi_Interface # (
 //  output registers
     // Audio
     output reg [7:0]    audio_control_reg,
-    output reg [7:0]    taps_per_filter_reg,
-    output reg [7:0]    eq_select_reg,
+    // FIR filter
+    output reg [7:0]    coefs_per_tap_lsb_reg,
     output reg [7:0]    coef_select_reg,
     output reg [7:0]    coef_wr_lsb_data_reg,
     output reg [7:0]    coef_wr_msb_data_reg,
+    // Equalizer
+    output reg [7:0]    eq_select_reg,
     output reg [7:0]    eq_wr_lsb_data_reg,
     output reg [7:0]    eq_wr_msb_data_reg,
     // sram
@@ -89,10 +91,10 @@ wire [6:0] status_reg = 0;
 //	Write / Read
 	parameter AUD_CONTROL      = 7'h00;    // Audio Control Reg
 	parameter AUD_STATUS       = 7'h01;    // Status, write only
-	parameter NUM_FIR_TAPS     = 7'h02;    // Number of taps per filter
+	parameter COEFS_PER_TAP    = 7'h02;    // Number of taps per filter
 	parameter COEF_SEL         = 7'h03;    // Coefficient filter to be accessed, max. number = NUM_FIR_TAPS
-	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient lsb based on the COEF_SEL  
-	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient msb based on the COEF_SEL  
+	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient wr lsb based on the COEF_SEL  
+	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient wr msb based on the COEF_SEL  
 	parameter AUX              = 7'h06;    // aux Reg
 	parameter SRAM_CONTROL     = 7'h07;    // page for sram
 	parameter SRAM_ADDR        = 7'h08;    // selects sram start address for auto-increment
@@ -140,7 +142,7 @@ always @ (posedge clk) begin
 	if (wr_strobe) begin
 //		if (selGeneral) begin
 			if (spi_addr == AUD_CONTROL)         audio_control_reg           <= spi_write_data;
-			else if (spi_addr == NUM_FIR_TAPS)   taps_per_filter_reg         <= spi_write_data;
+			else if (spi_addr == COEFS_PER_TAP)  coefs_per_tap_lsb_reg       <= spi_write_data;
 			else if (spi_addr == COEF_SEL)       coef_select_reg             <= spi_write_data;
 			else if (spi_addr == FIR_COEF_LSB)   coef_wr_lsb_data_reg        <= spi_write_data;
 			else if (spi_addr == FIR_COEF_MSB)   coef_wr_msb_data_reg        <= spi_write_data;
@@ -165,7 +167,7 @@ always @ (posedge clk) begin
         spi_read_data <= 
             (spi_addr == AUD_CONTROL)    ?   audio_control_reg :
             (spi_addr == AUD_STATUS)     ?   audio_status :
-            (spi_addr == NUM_FIR_TAPS)   ?   taps_per_filter_reg :
+            (spi_addr == COEFS_PER_TAP)  ?   coefs_per_tap_lsb_reg :
             (spi_addr == COEF_SEL)       ?   coef_select_reg :
             (spi_addr == SRAM_CONTROL)   ?   sram_control_reg :
             (spi_addr == SRAM_ADDR)      ?   sram_start_addr_reg :

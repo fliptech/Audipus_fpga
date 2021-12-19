@@ -87,7 +87,7 @@ parameter num_of_filters = 4;
     wire [7:0] audio_control_reg;
     wire [7:0] eq_select_reg;
     wire [7:0] coef_select_reg;
-    wire [7:0] number_of_taps_reg;
+    wire [7:0] coefs_per_tap_lsb_reg;
     wire [7:0] fir_coef_msb, fir_coef_lsb;
 // sram connections 
     wire [7:0] sram_to_spi_data, spi_to_sram_reg;   
@@ -199,8 +199,8 @@ parameter num_of_filters = 4;
 //  output registers, output [7:0]
         // Audio
         .audio_control_reg      (audio_control_reg),
-        .taps_per_filter_reg    (number_of_taps_reg),
-        .filter_select_reg      (filter_select_reg),
+        .coefs_per_tap_lsb_reg  (coefs_per_tap_lsb_reg),
+        .coef_select_reg        (coef_select_reg),
         .coef_wr_lsb_data_reg   (fir_coef_lsb),
         .coef_wr_msb_data_reg   (fir_coef_msb),
         .eq_wr_lsb_data_reg     (eq_gain_lsb),
@@ -258,10 +258,8 @@ parameter num_of_filters = 4;
         .coef_wr_en         (coef_wr_en),
         .eq_wr_en           (eq_wr_en),
         .audio_control      (audio_control_reg),
-        .taps_per_filter    (number_of_taps_reg),   // bits [5:0] taps, [7:6] coefs_per_tap_msb
+        .coefs_per_tap_lsb  (coefs_per_tap_lsb_reg),   // msb bit is audio_control[6]
         .coef_select        (coef_select_reg),
-        .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg
-        .coefs_per_tap_msb  (coefs_per_tap_msb),    // [7:0] input, cpu reg
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
         .eq_select          (eq_select_reg),
