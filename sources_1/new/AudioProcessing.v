@@ -100,7 +100,7 @@ wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
 wire test_left =            test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
 
-wire sin_test_en = (test_reg[1:0] == 2'b10);
+wire sin_test_en = (audio_mux_sel == 2'b10);
 
 wire [10:0] smp_clken_count;
 
