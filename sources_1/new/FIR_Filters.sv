@@ -52,7 +52,7 @@ module FIR_Filters #(
 
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
 reg fir_en, fir_valid_stb, data_en, data_armed;
-reg [7:0] coef_wr_addr;
+reg [8:0] coef_wr_addr;
 
 wire [23:0] l_buf_data_out, r_buf_data_out;
 

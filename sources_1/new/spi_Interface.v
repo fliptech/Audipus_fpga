@@ -190,9 +190,9 @@ always @ (posedge clk) begin
 end        
 
 always @ (posedge clk) begin
-    coef_wr_stb <= (spi_addr == FIR_COEF_MSB) && wr_strobe; // SW IMPORTANT: FIR_COEF_LSB most always be written before FIR_COEF_LMSB
+    coef_wr_stb <= (spi_addr == FIR_COEF_LSB) && wr_strobe; // SW IMPORTANT: FIR_COEF_MSB most always be written before FIR_COEF_LSB
 
-    eq_wr_stb <= (spi_addr == EQ_GAIN_MSB) && wr_strobe;    // SW IMPORTANT: EQ_GAIN_LSB most always be written before EQ_GAIN_LMSB
+    eq_wr_stb <= (spi_addr == EQ_GAIN_LSB) && wr_strobe;    // SW IMPORTANT: EQ_GAIN_MSB most always be written before EQ_GAIN_LSB
 
 end
 
