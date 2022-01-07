@@ -51,7 +51,7 @@ module FIR_Filters #(
 );
 
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
-reg fir_en, fir_valid_stb, data_en, data_armed;
+reg fir_en, fir_valid_stb, data_en, data_armed, coef_wr_en_dly;
 reg [8:0] coef_wr_addr;
 
 wire [23:0] l_buf_data_out, r_buf_data_out;
@@ -71,9 +71,10 @@ assign wr_addr_zero = (coef_wr_addr == 0);
 // coefficient write address generator
 //      auto increments coef_wr_addr after every write
 always @ (posedge clk) begin 
+    coef_wr_en_dly <= coefficient_wr_en;
     if (!reset_n || coef_addr_rst)
         coef_wr_addr <= 0;
-    else if (coefficient_wr_en)
+    else if (coef_wr_en_dly)
         coef_wr_addr <= coef_wr_addr + 1;
     else
         coef_wr_addr <= coef_wr_addr;        
