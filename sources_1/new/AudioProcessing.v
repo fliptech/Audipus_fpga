@@ -90,12 +90,13 @@ wire [23:0] l_frontEnd_data, r_frontEnd_data;
 /////// audio control register ////////
 assign      audio_enable =  audio_control[0];
 wire [1:0]  audio_mux_sel = audio_control[2:1];
+wire        eq_addr_rst = audio_control[5];
 wire        coefs_per_tap_msb = audio_control[6];
 wire        coef_addr_rst = audio_control[7];
 /////// test control register ////////
 wire [1:0] test_d_select =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
 wire output_test_en =       test_reg[2];   // [4] selects a fixed output pattern
-wire eq_bypass =            test_reg[3];   // [3] bypasses equalizer (for fir tests)
+//wire eq_bypass =            test_reg[3];   // [3] bypasses equalizer (for fir tests)
 wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
 wire test_left =            test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
@@ -148,11 +149,14 @@ FrontEndTest fe_test (
     .clk                (clk),
     .run                (audio_enable),
     .triangle_inc_reg   (triangle_inc_reg),
-    .data_out_select    (fe_test_reg[1:0]),     // 0 = bypass
+    .data_out_select    (fe_test_reg[2:0]),     // 0 = bypass
 //  input from I2S_to_PCM_Converter for bypass mode (data_out_select=0)  
     .pcm_valid          (i2sToPcm_valid),            
     .l_pcm_data         (l_pcm_data),            
     .r_pcm_data         (r_pcm_data),
+    .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg
+    .coefs_per_tap_msb  (coefs_per_tap_msb),    // input taken from audio_control[6]
+    
 //  outputs
     .frontEnd_valid     (frontEnd_valid),     // strobe    
     .l_frontEnd_data    (l_frontEnd_data),      // output[23:0]                    
@@ -195,8 +199,8 @@ FIR_Filters filters (
     .l_data_in          (l_intrp_d_out),           // [23:0] input
     .r_data_in          (r_intrp_d_out),           // [23:0] input
     // output signals
-    .l_data_valid       (l_fir_data_valid),     // output valid strobe
-    .r_data_valid       (r_fir_data_valid),     // output valid strobe
+    .l_data_valid       (l_fir_data_valid),     // l_data_valid = r_data_valid {stobe)
+    .r_data_valid       (r_fir_data_valid),     // r_data_valid = l_data_valid {stobe)
     .l_data_out         (l_fir_data_out),       // [47:0][num_of_filters] output
     .r_data_out         (r_fir_data_out),        // [47:0][num_of_filters] output
     .test_data          (fir_test_data),
@@ -209,9 +213,10 @@ EqualizerGains eq_gain (
     .clk            (clk),
     .reset_n        (reset_n),
     .run            (audio_enable),
-    .bypass         (eq_bypass),
+//    .bypass         (eq_bypass),
     // cpu interface
     .eq_wr          (eq_wr_en),
+    .eq_wr_rst      (eq_addr_rst),
     .eq_wr_sel      (eq_select[3:0]),                 // input [num_of_filters - 1 : 0]     
     .eq_rd_sel      (eq_select[7:4]),                 // input [num_of_filters - 1 : 0]     
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
@@ -226,7 +231,8 @@ EqualizerGains eq_gain (
     .l_data_valid   (l_eq_valid),                       // output strobe
     .r_data_valid   (r_eq_valid),                       // output strobe
     .l_data_out     (l_eq_out),                         // output [23:0] 
-    .r_data_out     (r_eq_out)                          // output [23:0] 
+    .r_data_out     (r_eq_out),                         // output [23:0]
+    .eq_test_d      (eq_test_data)                      // output [15:0]
 );
 
 
@@ -303,17 +309,18 @@ PCM_to_I2S_Converter pcm_to_i2s(
 assign test_data_out =  
 //                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
 //                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
-                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
+//                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
 //                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
                         (test_d_select == 2) ? {l_mux_out[23:11], dac_data, dac_lrclk, l_mux_valid} :
                         (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
-                        (test_d_select == 0) ? fir_test_data :                       
+                        (test_d_select == 0) ? fir_test_data : 
+                        (test_d_select == 1) ? eq_test_data :                                              
                         0
 ;
 
 
 assign test_dout_valid =    (test_d_select == 0) ? fir_test_en :
-                            (test_d_select == 1) ? 1'b1 :
+                            (test_d_select == 1) ? r_eq_valid :
                             (test_d_select == 2) ? l_intrp_dout_valid :
                             (test_d_select == 3) ? frontEnd_valid :
                             0

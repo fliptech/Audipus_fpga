@@ -28,10 +28,12 @@ module FrontEndTest(
     input [7:0]         triangle_inc_reg,       // msb only, lsb set to 0s, sets the slope of the triangle based on num_of_bits and smp_rate
   // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
  
-    input [1:0]         data_out_select,
+    input [2:0]         data_out_select,
     input               pcm_valid,
     input [23:0]        l_pcm_data,
     input [23:0]        r_pcm_data,
+    input [7:0]         coefs_per_tap_lsb,    // [7:0] input, cpu reg
+    input               coefs_per_tap_msb,    // input taken from audio_control[6]
      
     output              frontEnd_valid,       // strobe
     output [23:0]       l_frontEnd_data,
@@ -54,6 +56,7 @@ assign bit_cnt_reg = numOfBits;
 reg neg, data_valid, data_valid_out;
 reg [23:0] frontEnd_data, triangle_count;
 reg [10:0] smp_clken_count;
+reg [8:0]  impulse_count;
 
 wire [23:0]  triangle_incrmnt = {3'h0, triangle_inc_reg, 13'h0000};
 
@@ -120,6 +123,25 @@ always @ (posedge clk) begin
     end
 end
 
+// impulse count generation
+always @ (posedge clk) begin
+    if (!run && (data_out_select != 4)) begin
+        impulse_count <= 0;
+//        neg <= 1'b0;
+     end
+    else begin
+        if (data_valid) begin
+            if (impulse_count == ({coefs_per_tap_lsb, coefs_per_tap_lsb} + 4))
+                impulse_count <= 0;
+            else 
+                impulse_count <= impulse_count + 1;
+        end 
+        else begin
+            impulse_count <= impulse_count;
+        end
+    end
+end
+           
 
 
 // output data mux
@@ -148,6 +170,14 @@ always @ (posedge clk) begin
                     r_frontEnd_data[22:0] <= triangle_count[22:0];
 */                    
                 end
+                4: begin    // impulse
+                    if (impulse_count == 1)
+                        frontEnd_data <= 24'h7fff00;
+                    else
+                        frontEnd_data <= 24'h8000ff;
+                end
+                default:
+                    frontEnd_data <= 0;
             endcase
         end
         else begin

@@ -41,8 +41,8 @@ module FIR_Filters #(
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
     // output signals
-    output          l_data_valid,
-    output          r_data_valid,
+    output          l_data_valid,   // l_data_valid = r_data_valid = fir_data_valid
+    output          r_data_valid,   // r_data_valid = l_data_valid = fir_data_valid
     output [47:0]   l_data_out[taps_per_filter - 1 :0],
     output [47:0]   r_data_out[taps_per_filter - 1 :0],
     output [15:0]   test_data,
