@@ -45,7 +45,9 @@ module EqualizerGains #(
     output r_data_valid,
     output [23:0] l_data_out,
     output [23:0] r_data_out,
-    output [15:0] eq_test_d
+    output [15:0] eq_test_d,
+    output eq_test_en
+    
 );
 
 reg eq_run, eq_wr_dly, eq_valid_stb;
@@ -177,5 +179,7 @@ eq_accum right_eq_accum (
 );
 
 assign eq_test_d = gain;
+assign eq_test_en = eq_run;
+//assign eq_test_d1 = {2'b00, l_data_en, r_data_en, eq_wr_addr, eq_wr_rst, 2'b00, eq_rd_addr, eq_run};
 
 endmodule

@@ -105,8 +105,8 @@ wire sin_test_en = (audio_mux_sel == 2'b10);
 
 wire [10:0] smp_clken_count;
 
-wire [15:0] fir_test_data;
-wire        fir_test_en;
+wire [15:0] fir_test_data, eq_test_data;
+wire        fir_test_en, eq_test_en;
 
 // audio_status register
 assign audio_status[0]  = fir_wr_addr_zero;
@@ -232,7 +232,8 @@ EqualizerGains eq_gain (
     .r_data_valid   (r_eq_valid),                       // output strobe
     .l_data_out     (l_eq_out),                         // output [23:0] 
     .r_data_out     (r_eq_out),                         // output [23:0]
-    .eq_test_d      (eq_test_data)                      // output [15:0]
+    .eq_test_d      (eq_test_data),                     // output [15:0]
+    .eq_test_en     (eq_test_en)                        // output
 );
 
 
@@ -320,8 +321,9 @@ assign test_data_out =
 
 
 assign test_dout_valid =    (test_d_select == 0) ? fir_test_en :
-                            (test_d_select == 1) ? r_eq_valid :
-                            (test_d_select == 2) ? l_intrp_dout_valid :
+                            (test_d_select == 1) ? eq_test_en :
+                            (test_d_select == 2) ? r_eq_valid :
+//                            (test_d_select == 2) ? l_intrp_dout_valid :
                             (test_d_select == 3) ? frontEnd_valid :
                             0
 ;
