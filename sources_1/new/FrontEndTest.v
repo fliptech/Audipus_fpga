@@ -28,7 +28,7 @@ module FrontEndTest(
     input [7:0]         triangle_inc_reg,       // msb only, lsb set to 0s, sets the slope of the triangle based on num_of_bits and smp_rate
   // triangle_incrmnt = 2^numOfBits / samplePerCycle = 2^24 / 96 = 16,777,216 / 96 = 174762 = 0x2aaaa
  
-    input [2:0]         data_out_select,
+    input [3:0]         data_out_select,
     input               pcm_valid,
     input [23:0]        l_pcm_data,
     input [23:0]        r_pcm_data,
@@ -174,7 +174,8 @@ always @ (posedge clk) begin
                     if (impulse_count == 1)
                         frontEnd_data <= 24'h7fff00;
                     else
-                        frontEnd_data <= 24'h8000ff;
+                        frontEnd_data <= 0;
+//                        frontEnd_data <= 24'h8000ff;
                 end
                 default:
                     frontEnd_data <= 0;

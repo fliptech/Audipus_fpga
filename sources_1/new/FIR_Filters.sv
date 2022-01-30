@@ -40,6 +40,8 @@ module FIR_Filters #(
     input           r_data_en,
     input [23:0]    l_data_in,
     input [23:0]    r_data_in,
+    // test signals
+    input           impulse_test_en,
     // output signals
     output          l_data_valid,   // l_data_valid = r_data_valid = fir_data_valid
     output          r_data_valid,   // r_data_valid = l_data_valid = fir_data_valid
@@ -65,6 +67,11 @@ assign l_data_valid = fir_data_valid;
 assign r_data_valid = fir_data_valid;
 
 wire [8:0] coefs_per_tap = {coefs_per_tap_msb, coefs_per_tap_lsb};  // 511 max
+
+wire [23:0] r_impulse = (r_data_en && (buf_pntr == 1)) ? 24'h7fff00 : 0;
+wire [23:0] l_impulse = (l_data_en && (buf_pntr == 1)) ? 24'h7fff00 : 0;
+wire [23:0] r_din = impulse_test_en ? r_impulse : r_data_in;
+wire [23:0] l_din = impulse_test_en ? l_impulse : l_data_in;
           
 assign wr_addr_zero = (coef_wr_addr == 0);
 
@@ -87,16 +94,16 @@ end
 // circular buffer control
 always @ (posedge clk) begin
     if (!reset_n || !audio_en) begin
-        buf_rd_addr <= taps_per_filter - 1;
+        buf_rd_addr <= coefs_per_tap - 1;
         coef_rd_addr <= 0;
-        buf_pntr <= taps_per_filter - 1;
+        buf_pntr <= coefs_per_tap - 1;
     end
     else begin
 //      if (coef_rd_addr == (taps_per_filter - 1)) begin
-        if (data_en) begin            // if new audio sample (both left & right) strobe 
+        if (data_en) begin            // strobe: if new audio sample (both left & right) strobe 
             coef_rd_addr <= 0;
             if (buf_pntr == 0)
-                buf_pntr <= taps_per_filter - 1;
+                buf_pntr <= coefs_per_tap - 1;
             else
                 buf_pntr = buf_pntr - 1;    // for clkwise turn
             buf_rd_addr = buf_pntr;
@@ -162,6 +169,10 @@ always @ (posedge clk) begin
     end
 end
 
+// generate impulse for test
+
+
+
  
 defparam fir_valid_delay.SIG_DLY = 4; // Delay of 4 clks
 
@@ -177,7 +188,7 @@ circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
   .we(l_data_en),       // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [7 : 0] a (wr)
-  .d(l_data_in),        // input wire [23 : 0] d
+  .d(l_din),            // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(l_buf_data_out)  // output wire [23 : 0] dpo
 );
@@ -187,7 +198,7 @@ circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
   .we(r_data_en),       // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [7 : 0] a (wr) 
-  .d(r_data_in),        // input wire [23 : 0] d
+  .d(r_din),            // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
   .dpo(r_buf_data_out)  // output wire [23 : 0] dpo
 );
@@ -206,7 +217,7 @@ generate
         coef_ram FIR_coef_ram (
             .clk    (clk),                                      // input wire clk
             .we     (coef_wr_en[i]),                            // input wire we
-            .a      (coef_wr_addr),                             // input wire [7 : 0] a
+            .a      (coef_wr_addr),                             // input wire [8 : 0] a
             .d      ({coef_wr_msb_data, coef_wr_lsb_data}),     // input wire [15 : 0] d
             .dpra   (coef_rd_addr),                           // input wire [8 : 0] dpra
             .dpo    (coefficients[i])                           // output wire [15 : 0] dpo
@@ -245,8 +256,12 @@ endgenerate
 
 // Test modules
 
-    assign test_data  =  coefficients[coef_select];
-    assign fir_test_en = fir_en;
+//    assign test_data  =  coefficients[coef_select];
+//    assign test_data  =  r_data_out[coef_select][15:0];
+    assign test_data  =  r_din[15:0];
+    
+//    assign fir_test_en = fir_en;
+    assign fir_test_en = r_data_en;
     
 
 endmodule

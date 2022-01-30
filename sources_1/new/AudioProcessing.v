@@ -96,7 +96,7 @@ wire        coef_addr_rst = audio_control[7];
 /////// test control register ////////
 wire [1:0] test_d_select =  test_reg[1:0]; // [0] routes 4 inputs directly to output i2s, inputs: i2sToPcm, interp, sinwave, eq 
 wire output_test_en =       test_reg[2];   // [4] selects a fixed output pattern
-//wire eq_bypass =            test_reg[3];   // [3] bypasses equalizer (for fir tests)
+wire impulse_test =         test_reg[3];   // [3] impulse test (formerly equalizer bypass)
 wire sin_select =           test_reg[4];   // [5] 1=sin wave, 0=triangle wave
 wire test_left =            test_reg[5];   // [5] 1=left, 0=right
 wire [3:0] sin_freq_select =  {2'b00, test_reg[7:6]};
@@ -149,7 +149,7 @@ FrontEndTest fe_test (
     .clk                (clk),
     .run                (audio_enable),
     .triangle_inc_reg   (triangle_inc_reg),
-    .data_out_select    (fe_test_reg[2:0]),     // 0 = bypass
+    .data_out_select    (fe_test_reg[3:0]),     // 0 = bypass
 //  input from I2S_to_PCM_Converter for bypass mode (data_out_select=0)  
     .pcm_valid          (i2sToPcm_valid),            
     .l_pcm_data         (l_pcm_data),            
@@ -198,6 +198,8 @@ FIR_Filters filters (
     .r_data_en          (r_intrp_dout_valid),     // input enable strobe 
     .l_data_in          (l_intrp_d_out),           // [23:0] input
     .r_data_in          (r_intrp_d_out),           // [23:0] input
+    // test signals
+    .impulse_test_en    (impulse_test),         // input for enabling impulse test
     // output signals
     .l_data_valid       (l_fir_data_valid),     // l_data_valid = r_data_valid {stobe)
     .r_data_valid       (r_fir_data_valid),     // r_data_valid = l_data_valid {stobe)
