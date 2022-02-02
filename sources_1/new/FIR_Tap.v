@@ -23,8 +23,8 @@
 module FIR_Tap (
     input clk,
     input reset_n,
-    input audio_en,
-    input data_en,                  
+    input data_valid_stb,
+    input fir_en,                  
     input [15:0] coefficients,
     input [23:0] data_in,
     output [47:0] data_out
@@ -33,15 +33,14 @@ module FIR_Tap (
 
 wire            fir_bypass = 0;
 wire [39:0]     mult_dout;
-wire [47:0]     firTap_dout;
 
-assign data_out = firTap_dout[47:16];  // barrel shift ???
+wire fir_clr = !reset_n || data_valid_stb;
 
 
 fir_tap_multiply fir_tap_mult (
     .CLK    (clk),                  // input wire CLK
-    .CE     (data_en),           // input wire CE
-    .SCLR   (reset_n),              // input wire SCLR
+    .CE     (fir_en),           // input wire CE
+    .SCLR   (fir_clr),              // input wire SCLR
     .B      (data_in),             // input wire [23 : 0] B
     .A      (coefficients),         // input wire [15 : 0] A
     .P      (mult_dout)             // output wire [39 : 0] P);
@@ -52,11 +51,11 @@ fir_tap_multiply fir_tap_mult (
     
 fir_accumulator fir_accum (
   .CLK          (clk),                  // input wire CLK
-  .CE           (data_en),              // input wire CE
+  .CE           (fir_en),               // input wire CE
   .BYPASS       (fir_bypass),           // input wire BYPASS
-  .SCLR         (reset_n || audio_en),  // input wire SCL
+  .SCLR         (fir_clr),              // input wire SCL
   .B            (mult_dout[39:8]),      // input wire [31 : 0] B
-  .Q            (firTap_dout)           // output wire [47 : 0] Q
+  .Q            (data_out)              // output wire [47 : 0] Q, latency = 4
 );
 
         

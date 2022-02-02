@@ -70,7 +70,7 @@ wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
 wire l_eq_valid, r_eq_valid;
 wire sin_wave_valid, l_intrp_dout_valid, r_intrp_dout_valid;
-wire fir_wr_addr_zero, eq_wr_addr_zero;
+wire fir_pntr_zero, eq_wr_addr_zero;
  
 wire        i2sToPcm_valid;
 //wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
@@ -109,7 +109,7 @@ wire [15:0] fir_test_data, eq_test_data;
 wire        fir_test_en, eq_test_en;
 
 // audio_status register
-assign audio_status[0]  = fir_wr_addr_zero;
+assign audio_status[0]  = fir_pntr_zero;
 assign audio_status[1]  = eq_wr_addr_zero;
 
 
@@ -192,7 +192,7 @@ FIR_Filters filters (
     .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
     .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg
     .coefs_per_tap_msb  (coefs_per_tap_msb),    // input taken from audio_control[6]
-    .wr_addr_zero       (fir_wr_addr_zero),     // output
+    .pntr_zero          (fir_pntr_zero),        // output, for test
     // input signals
     .l_data_en          (l_intrp_dout_valid),     // input enable strobe 
     .r_data_en          (r_intrp_dout_valid),     // input enable strobe 
@@ -314,8 +314,9 @@ assign test_data_out =
 //                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
 //                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
 //                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
-                        (test_d_select == 2) ? {l_mux_out[23:11], dac_data, dac_lrclk, l_mux_valid} :
-                        (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
+//                        (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
+                        (test_d_select == 2) ? r_fir_data_out[0][47:32] :
+                        (test_d_select == 3) ? {fir_pntr_zero, r_fir_data_out[0][30:16]} :
                         (test_d_select == 0) ? fir_test_data : 
                         (test_d_select == 1) ? eq_test_data :                                              
                         0
@@ -324,9 +325,10 @@ assign test_data_out =
 
 assign test_dout_valid =    (test_d_select == 0) ? fir_test_en :
                             (test_d_select == 1) ? eq_test_en :
-                            (test_d_select == 2) ? r_eq_valid :
+                            (test_d_select == 2) ? r_fir_data_valid :
+                            (test_d_select == 3) ? r_fir_data_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
-                            (test_d_select == 3) ? frontEnd_valid :
+//                            (test_d_select == 3) ? frontEnd_valid :
                             0
 ;
    

@@ -34,7 +34,7 @@ module FIR_Filters #(
     input [7:0]     coef_wr_msb_data,
     input [7:0]     coefs_per_tap_lsb,  // must be written AFTER coef_wr_msb_data
     input           coefs_per_tap_msb,  // from audio_control[6]
-    output          wr_addr_zero,
+    output          pntr_zero,
     // input signals
     input           l_data_en,
     input           r_data_en,
@@ -49,7 +49,6 @@ module FIR_Filters #(
     output [47:0]   r_data_out[taps_per_filter - 1 :0],
     output [15:0]   test_data,
     output          fir_test_en
-     
 );
 
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
@@ -73,7 +72,7 @@ wire [23:0] l_impulse = (l_data_en && (buf_pntr == 1)) ? 24'h7fff00 : 0;
 wire [23:0] r_din = impulse_test_en ? r_impulse : r_data_in;
 wire [23:0] l_din = impulse_test_en ? l_impulse : l_data_in;
           
-assign wr_addr_zero = (coef_wr_addr == 0);
+assign pntr_zero = (buf_pntr == 0);
 
 // coefficient write address generator
 //      auto increments coef_wr_addr after every write
@@ -114,7 +113,7 @@ always @ (posedge clk) begin
             buf_pntr <= buf_pntr;
         end
         else begin
-            coef_rd_addr <= coef_rd_addr; 
+            coef_rd_addr <= 0; 
             buf_rd_addr <= buf_rd_addr;
             buf_pntr <= buf_pntr;
         end
@@ -174,7 +173,7 @@ end
 
 
  
-defparam fir_valid_delay.SIG_DLY = 4; // Delay of 4 clks
+defparam fir_valid_delay.SIG_DLY = 4; // Delay of 4 clks for FIR_Tap accumulato latency
 
 SignalPipeLineDelay fir_valid_delay (
     .clk        (clk),
@@ -187,9 +186,9 @@ SignalPipeLineDelay fir_valid_delay (
 circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
   .we(l_data_en),       // input wire we; wr to buf one clk before fir_en
-  .a(buf_pntr),         // input wire [7 : 0] a (wr)
+  .a(buf_pntr),         // input wire [8 : 0] a (wr)
   .d(l_din),            // input wire [23 : 0] d
-  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
+  .dpra(buf_rd_addr),   // input wire [8 : 0] dpra (rd)
   .dpo(l_buf_data_out)  // output wire [23 : 0] dpo
 );
 
@@ -197,9 +196,9 @@ circular_fir_buffer l_circular_buffer (
 circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
   .we(r_data_en),       // input wire we; wr to buf one clk before fir_en
-  .a(buf_pntr),         // input wire [7 : 0] a (wr) 
+  .a(buf_pntr),         // input wire [8 : 0] a (wr) 
   .d(r_din),            // input wire [23 : 0] d
-  .dpra(buf_rd_addr),   // input wire [7 : 0] dpra (rd)
+  .dpra(buf_rd_addr),   // input wire [8 : 0] dpra (rd)
   .dpo(r_buf_data_out)  // output wire [23 : 0] dpo
 );
 
@@ -227,8 +226,8 @@ generate
         FIR_Tap fir_tap_l (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-            .audio_en           (audio_en),         // input
-            .data_en            (fir_en),           // input
+            .data_valid_stb     (fir_data_valid),   // input
+            .fir_en             (fir_en),           // input
             .data_in            (l_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
             .data_out           (l_data_out[i])     // [47:0] output      
@@ -237,8 +236,8 @@ generate
         FIR_Tap fir_tap_r (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-            .audio_en           (audio_en),         // input
-            .data_en            (fir_en),           // input
+            .data_valid_stb     (fir_data_valid),   // input
+            .fir_en             (fir_en),           // input
             .data_in            (r_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
             .data_out           (r_data_out[i])     // [47:0] output      
@@ -258,10 +257,11 @@ endgenerate
 
 //    assign test_data  =  coefficients[coef_select];
 //    assign test_data  =  r_data_out[coef_select][15:0];
-    assign test_data  =  r_din[15:0];
+//    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
+    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
-//    assign fir_test_en = fir_en;
-    assign fir_test_en = r_data_en;
+    assign fir_test_en = fir_en;
+//    assign fir_test_en = data_en;
     
 
 endmodule
