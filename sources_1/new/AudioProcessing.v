@@ -315,8 +315,8 @@ assign test_data_out =
 //                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
 //                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
 //                        (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
-                        (test_d_select == 2) ? r_fir_data_out[0][47:32] :
-                        (test_d_select == 3) ? {fir_pntr_zero, r_fir_data_out[0][30:16]} :
+                        (test_d_select == 2) ? {fir_pntr_zero, r_fir_data_out[0][47:31]} :
+                        (test_d_select == 3) ? r_fir_data_out[0][30:15] :
                         (test_d_select == 0) ? fir_test_data : 
                         (test_d_select == 1) ? eq_test_data :                                              
                         0

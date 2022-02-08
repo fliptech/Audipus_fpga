@@ -52,8 +52,10 @@ module FIR_Filters #(
 );
 
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
-reg fir_en, fir_valid_stb, data_en, data_armed, coef_wr_en_dly;
-reg [8:0] coef_wr_addr;
+reg fir_en, fir_valid_stb, data_en, data_armed;
+reg [3:0] coef_wr_en_dly;
+reg [8:0] coef_wr_addr; 
+reg [15:0] coef_wr_data;
 
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
@@ -76,11 +78,24 @@ assign pntr_zero = (buf_pntr == 0);
 
 // coefficient write address generator
 //      auto increments coef_wr_addr after every write
-always @ (posedge clk) begin 
-    coef_wr_en_dly <= coefficient_wr_en;
-    if (!reset_n || coef_addr_rst)
+
+always @ (posedge clk) begin
+    if (coefficient_wr_en) begin
+        coef_wr_data[15:8] <= coef_wr_msb_data;
+        coef_wr_data[7:0] <= coef_wr_lsb_data;
+    end
+    else begin
+        coef_wr_data <= coef_wr_data;
+    end
+end 
+    
+
+always @ (posedge clk) begin
+    coef_wr_en_dly[0] <= coefficient_wr_en;
+    coef_wr_en_dly[3:1] <= coef_wr_en_dly[2:0];
+    if (coef_addr_rst)
         coef_wr_addr <= 0;
-    else if (coef_wr_en_dly)
+    else if (coef_wr_en_dly[3])
         coef_wr_addr <= coef_wr_addr + 1;
     else
         coef_wr_addr <= coef_wr_addr;        
@@ -217,8 +232,8 @@ generate
             .clk    (clk),                                      // input wire clk
             .we     (coef_wr_en[i]),                            // input wire we
             .a      (coef_wr_addr),                             // input wire [8 : 0] a
-            .d      ({coef_wr_msb_data, coef_wr_lsb_data}),     // input wire [15 : 0] d
-            .dpra   (coef_rd_addr),                           // input wire [8 : 0] dpra
+            .d      (coef_wr_data),                             // input wire [15 : 0] d
+            .dpra   (coef_rd_addr),                             // input wire [8 : 0] dpra
             .dpo    (coefficients[i])                           // output wire [15 : 0] dpo
         );           
                 
@@ -246,7 +261,7 @@ generate
     
         // Coefficient write mux
         always @ (posedge clk) begin    
-            coef_wr_en[i] <= (coef_select == i) ?  coefficient_wr_en : 1'b0; 
+            coef_wr_en[i] <= (coef_select == i) ?  coef_wr_en_dly[0] : 1'b0; 
         end
         
     end     // for loop 
@@ -255,13 +270,13 @@ endgenerate
 
 // Test modules
 
-//    assign test_data  =  coefficients[coef_select];
+    assign test_data  =  coefficients[coef_select];
+    
 //    assign test_data  =  r_data_out[coef_select][15:0];
 //    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
-    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
+//    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
     assign fir_test_en = fir_en;
-//    assign fir_test_en = data_en;
     
 
 endmodule

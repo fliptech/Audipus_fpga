@@ -55,7 +55,9 @@ reg [2:0]                   spi_shift_clk;
 reg [num_of_shift_bits-1:0] spi_shift_in_data;
 reg [num_of_data_bits-1:0]  spi_shift_out_data;
 
-reg         spi_cs0_dly, spi_read_stb_dly;
+//reg         spi_cs0_dly, spi_read_stb_dly;
+reg [2:0]   spi_cs0_dly;
+reg         spi_read_stb_dly;
 reg         spi_miso_d;
 //reg         miso_tristate;
 
@@ -166,14 +168,17 @@ end
 
 // spi master write operation
 always @ (posedge clk) begin
-    spi_cs0_dly <= spi_cs0;
+//    spi_cs0_dly <= spi_cs0;
+    spi_cs0_dly[0] <= spi_cs0;
+    spi_cs0_dly[2:1] <= spi_cs0_dly[1:0];
     
     if (!reset_n) begin
         spi_write_stb <= 1'b0;
         spi_write_data <= 0;
     end
     else begin
-        if (!spi_cs0 && spi_cs0_dly) begin      // end of spi segment
+//        if (!spi_cs0 && spi_cs0_dly) begin      // end of spi segment
+        if (spi_cs0_dly == 3'b100) begin      // end of spi segment
             spi_write_stb <= spi_write;       // write strobe if in write mode
             spi_write_data <= spi_shift_in_data[num_of_data_bits-1:0];
         end    
