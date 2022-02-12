@@ -39,9 +39,9 @@ wire fir_clr = !reset_n || data_valid_stb;
 
 fir_tap_multiply fir_tap_mult (
     .CLK    (clk),                  // input wire CLK
-    .CE     (fir_en),           // input wire CE
+    .CE     (fir_en),               // input wire CE
     .SCLR   (fir_clr),              // input wire SCLR
-    .B      (data_in),             // input wire [23 : 0] B
+    .B      (data_in),              // input wire [23 : 0] B
     .A      (coefficients),         // input wire [15 : 0] A
     .P      (mult_dout)             // output wire [39 : 0] P);
  );

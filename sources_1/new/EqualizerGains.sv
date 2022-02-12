@@ -51,7 +51,6 @@ module EqualizerGains #(
 );
 
 reg eq_run, eq_wr_dly, eq_valid_stb;
-reg [47:0] audio_out_l, audio_out_r;
 reg [3:0] eq_wr_addr, eq_rd_addr, eq_rd_addr_dly;
 reg [1:0] eq_run_dly;
 
@@ -142,8 +141,8 @@ ram_2port_16x16 eq_gain_ram (
 mult_48x16 left_eq_mult (
   .CLK              (clk),                          // input wire CLK
   .SCLR             (r_data_en),                    // input wire SCLR
-  .CE               (eq_run_dly[0]),                   // input wire CE
-  .A                (audio_out_l[eq_rd_addr_dly]),  // input wire [47 : 0] A
+  .CE               (eq_run_dly[0]),                // input wire CE
+  .A                (l_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
   .B                (gain),                         // input wire [15 : 0] B
   .P                (l_mult_out)                    // output wire [63 : 0] P
 );
@@ -152,8 +151,8 @@ mult_48x16 left_eq_mult (
 mult_48x16 right_eq_mult (
   .CLK              (clk),                          // input wire CLK
   .SCLR             (r_data_en),                    // input wire SCLR
-  .CE               (eq_run_dly[0]),                   // input wire CE
-  .A                (audio_out_r[eq_rd_addr_dly]),  // input wire [47 : 0] A
+  .CE               (eq_run_dly[0]),                // input wire CE
+  .A                (r_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
   .B                (gain),                         // input wire [15 : 0] B
   .P                (r_mult_out)                    // output wire [63 : 0] P
 );

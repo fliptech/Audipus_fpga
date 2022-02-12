@@ -51,6 +51,8 @@ module FIR_Filters #(
     output          fir_test_en
 );
 
+parameter latency = 4;
+
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
 reg fir_en, fir_valid_stb, data_en, data_armed;
 reg [3:0] coef_wr_en_dly;
@@ -64,8 +66,10 @@ reg [taps_per_filter - 1 : 0]   coef_wr_en;
 
 wire fir_data_valid;
 
-assign l_data_valid = fir_data_valid;
-assign r_data_valid = fir_data_valid;
+//assign l_data_valid = fir_data_valid;
+//assign r_data_valid = fir_data_valid;
+assign l_data_valid = fir_valid_stb;
+assign r_data_valid = fir_valid_stb;
 
 wire [8:0] coefs_per_tap = {coefs_per_tap_msb, coefs_per_tap_lsb};  // 511 max
 
@@ -173,7 +177,7 @@ always @ (posedge clk) begin
         fir_en <= 1'b1;
         fir_valid_stb <= 1'b0;
     end
-    else if (coef_rd_addr == (coefs_per_tap - 1)) begin   // last filter tap processed
+    else if (coef_rd_addr == (coefs_per_tap - 1 + latency)) begin   // last filter tap processed
         fir_en <= 1'b0;
         fir_valid_stb <= 1'b1;
     end
@@ -241,7 +245,8 @@ generate
         FIR_Tap fir_tap_l (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-            .data_valid_stb     (fir_data_valid),   // input
+//            .data_valid_stb     (fir_data_valid),   // input
+            .data_valid_stb     (fir_valid_stb),   // input
             .fir_en             (fir_en),           // input
             .data_in            (l_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
@@ -251,7 +256,8 @@ generate
         FIR_Tap fir_tap_r (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-            .data_valid_stb     (fir_data_valid),   // input
+//            .data_valid_stb     (fir_data_valid),   // input
+            .data_valid_stb     (fir_valid_stb),   // input
             .fir_en             (fir_en),           // input
             .data_in            (r_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
@@ -270,10 +276,9 @@ endgenerate
 
 // Test modules
 
-    assign test_data  =  coefficients[coef_select];
-    
+//    assign test_data  =  coefficients[coef_select];    
 //    assign test_data  =  r_data_out[coef_select][15:0];
-//    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
+    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
 //    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
     assign fir_test_en = fir_en;
