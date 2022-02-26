@@ -335,8 +335,8 @@ assign test_data_out =
 
 assign test_dout_valid =    (test_d_select == 0) ? l_intrp_dout_valid :
                             (test_d_select == 1) ? fir_test_en :
-                            (test_d_select == 2) ? r_fir_data_valid & fir_test_data[0]:
-                            (test_d_select == 3) ? r_fir_data_valid & fir_test_data[0] :
+                            (test_d_select == 2) ? r_fir_data_valid & fir_pntr_zero:
+                            (test_d_select == 3) ? r_fir_data_valid & fir_pntr_zero :
  //                            (test_d_select == 3) ? r_eq_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
 //                            (test_d_select == 3) ? frontEnd_valid :

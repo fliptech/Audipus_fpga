@@ -29,7 +29,7 @@ module FIR_Tap (
     input fir_accum_en,                  
     input [15:0] coefficients,
     input [23:0] data_in,
-    output [11:0] test_out,
+//    output [11:0] test_out,
     output reg [47:0] data_out
 );
 
@@ -41,7 +41,7 @@ wire [39:0]     mult_dout;
 wire [47:0] accum_out;
 
 //assign test_out = mult_dout[19:8];
-assign test_out = {mult_dout[11:8], data_in[11:8], coefficients[3:0]};
+//assign test_out = {mult_dout[11:8], data_in[11:8], coefficients[3:0]};
 
 
 fir_tap_multiply fir_tap_mult (

@@ -68,8 +68,8 @@ reg [taps_per_filter - 1 : 0]   coef_wr_en;
 
 wire fir_data_valid;
 
-wire [11:0] r_fir_tap_test[taps_per_filter - 1 : 0];
-wire [11:0] l_fir_tap_test[taps_per_filter - 1 : 0];
+//wire [11:0] r_fir_tap_test[taps_per_filter - 1 : 0];
+//wire [11:0] l_fir_tap_test[taps_per_filter - 1 : 0];
 
 //assign l_data_valid = fir_data_valid;
 //assign r_data_valid = fir_data_valid;
@@ -149,7 +149,7 @@ always @ (posedge clk) begin
     else begin
 //      if (coef_rd_addr == (taps_per_filter - 1)) begin
         if (data_en) begin            // strobe: if new audio sample (both left & right) strobe 
-            buf_rd_addr = buf_pntr;
+            buf_rd_addr = buf_pntr;         // circular buf rd addr
             coef_rd_addr <= 0;
             if (buf_pntr == 0)
                 buf_pntr <= coefs_per_tap - 1;
@@ -158,7 +158,10 @@ always @ (posedge clk) begin
         end
         else if (fir_en) begin          //  if fir processing enabled 1 clk after data_en 
             coef_rd_addr <= coef_rd_addr + 1;   // coef td addr
-            buf_rd_addr <= buf_rd_addr + 1;         // circular buf rd addr
+            if (buf_rd_addr == (coefs_per_tap - 1))
+                 buf_rd_addr <= 0;
+            else
+                buf_rd_addr <= buf_rd_addr + 1;         
             buf_pntr <= buf_pntr;
         end
         else begin
@@ -272,7 +275,7 @@ generate
             .fir_accum_en       (fir_accum_en),     // input
             .data_in            (l_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
-            .test_out           (l_fir_tap_test[i]),   // [9:0] output
+//            .test_out           (l_fir_tap_test[i]),   // [9:0] output
             .data_out           (l_data_out[i])     // [47:0] output      
         );        
         
@@ -285,7 +288,7 @@ generate
             .fir_accum_en       (fir_accum_en),     // input
             .data_in            (r_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
-            .test_out           (r_fir_tap_test[i]),   // [9:0] output
+//            .test_out           (r_fir_tap_test[i]),   // [9:0] output
             .data_out           (r_data_out[i])     // [47:0] output      
         );        
         
@@ -302,7 +305,7 @@ endgenerate
 // Test modules
 
 //    assign test_data  =  coefficients[coef_select];    
-    assign test_data  =  {r_data_in[13:8], r_din[13:8], r_data_en, fir_en, data_en, pntr_zero};
+    assign test_data  =  {r_buf_data_out[23:12], fir_mult_clr, fir_en, data_en, pntr_zero};
 //    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
 //    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
