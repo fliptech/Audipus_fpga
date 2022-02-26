@@ -156,7 +156,8 @@ always @ (posedge clk) begin
         if (data_valid) begin
             case (data_out_select)
                 1: begin    // positive dc value
-                    frontEnd_data <= 24'h7fff00;
+//                    frontEnd_data <= 24'h7fff00;
+                    frontEnd_data <= 24'h100;
                 end
                 2:  begin    // negative dc value
                     frontEnd_data <= 24'h8000ff;

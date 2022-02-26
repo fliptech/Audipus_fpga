@@ -224,6 +224,7 @@ EqualizerGains eq_gain (
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
     .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
     .wr_addr_zero   (eq_wr_addr_zero),                     // output status
+    .test_sel       (test_d_select),                    // temp       
     // pipe input
     .l_data_en      (l_fir_data_valid),                 // input strobe
     .r_data_en      (r_fir_data_valid),                 // input strobe
@@ -308,33 +309,40 @@ PCM_to_I2S_Converter pcm_to_i2s(
 ); 
 
 //  TEST
-// test from mux
+
+//assign test_data_out = r_eq_out;
+//assign test_dout_valid = r_eq_valid; 
+
+// test from mux 
 assign test_data_out =  
 //                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
 //                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
-//                        (test_d_select == 1) ? {r_intrp_d_out[23:11], dac_data, dac_lrclk, r_intrp_dout_valid} :
+                        (test_d_select == 0) ? r_intrp_d_out[23:8] :
 //                        (test_d_select == 2) ? {l_intrp_d_out[23:11], i2s_d, i2s_lrclk, i2s_bclk} :
 //                        (test_d_select == 3) ? {r_mux_out[23:11], dac_data, dac_lrclk, r_mux_valid} :
 //                        (test_d_select == 2) ? {fir_pntr_zero, r_fir_data_out[0][47:31]} :
 
-                        (test_d_select == 0) ? fir_test_data : 
-                        (test_d_select == 1) ? eq_test_data :                                              
-                        (test_d_select == 2) ? r_fir_data_out[0][23:8] :
-                        (test_d_select == 3) ? r_fir_data_out[0][15:0] :
-//                        (test_d_select == 3) ? r_eq_out[15:0] :
+                        (test_d_select == 1) ? fir_test_data : 
+//                        (test_d_select == 1) ? eq_test_data :                                              
+                        (test_d_select == 2) ? r_fir_data_out[0][15:0] :
+                        (test_d_select == 3) ? r_fir_data_out[0][31:16] :
+//                        (test_d_select == 3) ? eq_test_data :
+//                        (test_d_select == 1) ? r_eq_out[15:0] :
+//                        (test_d_select == 2) ? r_eq_out[15:0] :
                         0
 ;
 
 
-assign test_dout_valid =    (test_d_select == 0) ? fir_test_en :
-                            (test_d_select == 1) ? eq_test_en :
-                            (test_d_select == 2) ? r_fir_data_valid :
-                            (test_d_select == 3) ? r_fir_data_valid :
+assign test_dout_valid =    (test_d_select == 0) ? l_intrp_dout_valid :
+                            (test_d_select == 1) ? fir_test_en :
+                            (test_d_select == 2) ? r_fir_data_valid & fir_test_data[0]:
+                            (test_d_select == 3) ? r_fir_data_valid & fir_test_data[0] :
+ //                            (test_d_select == 3) ? r_eq_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
 //                            (test_d_select == 3) ? frontEnd_valid :
                             0
 ;
-   
+  
 
 endmodule
 

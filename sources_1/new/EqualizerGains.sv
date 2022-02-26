@@ -34,12 +34,13 @@ module EqualizerGains #(
     input [3:0] eq_rd_sel,    
     input [7:0] eq_gain_lsb,
     input [7:0] eq_gain_msb,
+    input [1:0] test_sel,
     output wr_addr_zero,
     // pipe input
     input l_data_en,        // expecting a strobe
     input r_data_en,        // expecting a strobe
-    input [47:0] l_data_in[3:0],
-    input [47:0] r_data_in[3:0],
+    input [47:0] l_data_in[num_of_filters-1:0],
+    input [47:0] r_data_in[num_of_filters-1:0],
     // pipe output
     output l_data_valid,
     output r_data_valid,
@@ -63,9 +64,16 @@ assign l_data_valid = eq_valid_stb;
 assign r_data_valid = eq_valid_stb;
 
 // truncation
-assign l_data_out[23:0] = l_accum_out[63:40];
-assign r_data_out[23:0] = r_accum_out[63:40];
+assign l_data_out = l_accum_out[63:40];
+//assign r_data_out = r_accum_out[63:40];
 
+assign r_data_out =         (test_sel == 0) ? {8'h00, r_accum_out[15:0]} :
+                            (test_sel == 1) ? {8'h00, r_accum_out[31:16]} :
+                            (test_sel == 2) ? {8'h00, r_accum_out[47:32]} :
+                            (test_sel == 3) ? {8'h00, r_accum_out[63:48]} :
+                            0;
+                            
+                            
 assign wr_addr_zero = (eq_wr_addr == 0);
 
 
@@ -115,17 +123,6 @@ always @ (posedge clk) begin
     eq_valid_stb <=  eq_run_dly[1] & !eq_run_dly[0];
 end
 
-/* Create mux for the number of filters for the Equalizer
-    genvar i;
-generate    
-    for (i = 0; i < num_of_filters; i = i + 1) begin
-         // Coefficient write mux
-        always @ (posedge clk) begin    
-            l_mult_in <= (eq_rd_addr == i) ?  audio_out_l[i] : 1'b0; 
-        end        
-    end     // for loop         
-endgenerate
-*/ 
     
 // RAM holding the gains for each (16) eq element    
 ram_2port_16x16 eq_gain_ram (
@@ -140,8 +137,8 @@ ram_2port_16x16 eq_gain_ram (
 // defines the weight of each eq element (left chnl)       
 mult_48x16 left_eq_mult (
   .CLK              (clk),                          // input wire CLK
-  .SCLR             (r_data_en),                    // input wire SCLR
-  .CE               (eq_run_dly[0]),                // input wire CE
+  .SCLR             (eq_valid_stb),                    // input wire SCLR
+  .CE               (eq_run),                       // input wire CE
   .A                (l_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
   .B                (gain),                         // input wire [15 : 0] B
   .P                (l_mult_out)                    // output wire [63 : 0] P
@@ -150,8 +147,8 @@ mult_48x16 left_eq_mult (
 // defines the weight of each eq element (right chnl)       
 mult_48x16 right_eq_mult (
   .CLK              (clk),                          // input wire CLK
-  .SCLR             (r_data_en),                    // input wire SCLR
-  .CE               (eq_run_dly[0]),                // input wire CE
+  .SCLR             (eq_valid_stb),                    // input wire SCLR
+  .CE               (eq_run),                       // input wire CE
   .A                (r_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
   .B                (gain),                         // input wire [15 : 0] B
   .P                (r_mult_out)                    // output wire [63 : 0] P
@@ -160,8 +157,9 @@ mult_48x16 right_eq_mult (
 // adds all of the eq elements together (left)
 eq_accum left_eq_accum (
   .CLK          (clk),              // input wire CLK
-  .CE           (eq_run_dly[1]),    // input wire CE
-  .SCLR         (r_data_en),        // input wire SCLR
+//  .CE           (eq_run_dly[1]),    // input wire CE
+  .CE           (eq_run_dly[0] | eq_valid_stb),    // input wire CE
+  .SCLR         (eq_valid_stb),     // input wire SCLR
   .BYPASS       (bypass),           // input wire BYPASS
   .B            (l_mult_out),       // input wire [63 : 0] B
   .Q            (l_accum_out)       // output wire [63 : 0] Q
@@ -170,15 +168,24 @@ eq_accum left_eq_accum (
 // adds all of the eq elements together (right)
 eq_accum right_eq_accum (
   .CLK          (clk),              // input wire CLK
-  .CE           (eq_run_dly[1]),    // input wire CE
-  .SCLR         (r_data_en),        // input wire SCLR
+//  .CE           (eq_run_dly[1]),    // input wire CE
+  .CE           (eq_run_dly[0] | eq_valid_stb),    // input wire CE
+  .SCLR         (eq_valid_stb),     // input wire SCLR
   .BYPASS       (bypass),           // input wire BYPASS
   .B            (r_mult_out),       // input wire [63 : 0] B
   .Q            (r_accum_out)       // output wire [63 : 0] Q
 );
 
-assign eq_test_d = gain;
+//assign eq_test_d = {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run};
 assign eq_test_en = eq_run;
 //assign eq_test_d1 = {2'b00, l_data_en, r_data_en, eq_wr_addr, eq_wr_rst, 2'b00, eq_rd_addr, eq_run};
+
+assign eq_test_d =      (test_sel == 0) ? {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run} :
+                        (test_sel == 1) ? {r_data_in[eq_rd_addr_dly][11:0], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
+                        (test_sel == 2) ? {r_mult_out[11:0], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
+                        (test_sel == 3) ? {r_mult_out[23:12], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
+                        0;
+
+
 
 endmodule

@@ -51,13 +51,15 @@ module FIR_Filters #(
     output          fir_test_en
 );
 
-parameter latency = 4;
 
 reg [8:0] buf_rd_addr, coef_rd_addr, buf_pntr;
-reg fir_en, fir_valid_stb, data_en, data_armed;
+reg fir_en, fir_valid_stb, data_en, data_armed, fir_accum_en, fir_accum_clr, fir_mult_clr;
 reg [3:0] coef_wr_en_dly;
 reg [8:0] coef_wr_addr; 
 reg [15:0] coef_wr_data;
+reg [1:0] latency_cnt;
+
+reg [23:0] r_din, l_din;
 
 wire [23:0] l_buf_data_out, r_buf_data_out;
 
@@ -66,6 +68,9 @@ reg [taps_per_filter - 1 : 0]   coef_wr_en;
 
 wire fir_data_valid;
 
+wire [11:0] r_fir_tap_test[taps_per_filter - 1 : 0];
+wire [11:0] l_fir_tap_test[taps_per_filter - 1 : 0];
+
 //assign l_data_valid = fir_data_valid;
 //assign r_data_valid = fir_data_valid;
 assign l_data_valid = fir_valid_stb;
@@ -73,12 +78,37 @@ assign r_data_valid = fir_valid_stb;
 
 wire [8:0] coefs_per_tap = {coefs_per_tap_msb, coefs_per_tap_lsb};  // 511 max
 
-wire [23:0] r_impulse = (r_data_en && (buf_pntr == 1)) ? 24'h7fff00 : 0;
-wire [23:0] l_impulse = (l_data_en && (buf_pntr == 1)) ? 24'h7fff00 : 0;
-wire [23:0] r_din = impulse_test_en ? r_impulse : r_data_in;
-wire [23:0] l_din = impulse_test_en ? l_impulse : l_data_in;
+
+wire [23:0] impulse = (data_en && (buf_pntr == (coefs_per_tap - 1))) ? 24'h7fff00 : 0;
+//wire [23:0] r_din = impulse_test_en ? impulse : r_data_in;
+//wire [23:0] l_din = impulse_test_en ? impulse : l_data_in;
           
 assign pntr_zero = (buf_pntr == 0);
+
+always @ (posedge clk) begin
+    if (impulse_test_en) begin
+        l_din <= impulse;
+    end
+    else if (l_data_en) begin
+        l_din <= l_data_in;
+    end
+    else begin
+        l_din <= l_din;
+    end
+end
+
+
+always @ (posedge clk) begin
+    if (impulse_test_en) begin
+        r_din <= impulse;
+    end
+    else if (r_data_en) begin
+        r_din <= r_data_in;
+    end
+    else begin
+        r_din <= r_din;
+    end
+end
 
 // coefficient write address generator
 //      auto increments coef_wr_addr after every write
@@ -119,14 +149,14 @@ always @ (posedge clk) begin
     else begin
 //      if (coef_rd_addr == (taps_per_filter - 1)) begin
         if (data_en) begin            // strobe: if new audio sample (both left & right) strobe 
+            buf_rd_addr = buf_pntr;
             coef_rd_addr <= 0;
             if (buf_pntr == 0)
                 buf_pntr <= coefs_per_tap - 1;
             else
                 buf_pntr = buf_pntr - 1;    // for clkwise turn
-            buf_rd_addr = buf_pntr;
         end
-        else if (fir_en) begin          //  if fir processing enabled 1 clk after data_en           
+        else if (fir_en) begin          //  if fir processing enabled 1 clk after data_en 
             coef_rd_addr <= coef_rd_addr + 1;   // coef td addr
             buf_rd_addr <= buf_rd_addr + 1;         // circular buf rd addr
             buf_pntr <= buf_pntr;
@@ -167,44 +197,35 @@ always @ (posedge clk) begin
     end                
 end
 
-// fir_en control
+// Control Signals: fir_en, fir_mult_clr, fir_accum_clr, fir_valid_stb generation
 always @ (posedge clk) begin
+    fir_accum_en <= fir_en;                     // 1 clk delay
+    fir_accum_clr <= fir_mult_clr;              // strobe and accum output reg enable
+    fir_valid_stb <= fir_accum_clr;             // output valid strobe
+    
     if (!reset_n || !audio_en) begin
         fir_en <= 1'b0;
-        fir_valid_stb <= 1'b0;
+        fir_mult_clr <= 1'b0;
     end
     else if (data_en)  begin          // strobe: if new audio sample (both left & right)
         fir_en <= 1'b1;
-        fir_valid_stb <= 1'b0;
+        fir_mult_clr <= 1'b0;
     end
-    else if (coef_rd_addr == (coefs_per_tap - 1 + latency)) begin   // last filter tap processed
+    else if (coef_rd_addr == (coefs_per_tap - 1)) begin   // last filter tap processed
         fir_en <= 1'b0;
-        fir_valid_stb <= 1'b1;
+        fir_mult_clr <= 1'b1;
     end
     else begin
         fir_en <= fir_en;
-        fir_valid_stb <= 1'b0;
+        fir_mult_clr <= 1'b0;
     end
 end
 
-// generate impulse for test
-
-
-
- 
-defparam fir_valid_delay.SIG_DLY = 4; // Delay of 4 clks for FIR_Tap accumulato latency
-
-SignalPipeLineDelay fir_valid_delay (
-    .clk        (clk),
-    .signal_in  (fir_valid_stb),
-    .signal_out (fir_data_valid)
-);
-        
 
 // left 2-port ram        
 circular_fir_buffer l_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(l_data_en),       // input wire we; wr to buf one clk before fir_en
+  .we(data_en),         // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [8 : 0] a (wr)
   .d(l_din),            // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [8 : 0] dpra (rd)
@@ -214,7 +235,7 @@ circular_fir_buffer l_circular_buffer (
 // right 2-port ram        
 circular_fir_buffer r_circular_buffer (
   .clk(clk),            // input wire clk
-  .we(r_data_en),       // input wire we; wr to buf one clk before fir_en
+  .we(data_en),         // input wire we; wr to buf one clk before fir_en
   .a(buf_pntr),         // input wire [8 : 0] a (wr) 
   .d(r_din),            // input wire [23 : 0] d
   .dpra(buf_rd_addr),   // input wire [8 : 0] dpra (rd)
@@ -245,22 +266,26 @@ generate
         FIR_Tap fir_tap_l (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-//            .data_valid_stb     (fir_data_valid),   // input
-            .data_valid_stb     (fir_valid_stb),   // input
+            .fir_mult_clr       (fir_mult_clr),   // input
+            .fir_accum_clr      (fir_accum_clr),   // input
             .fir_en             (fir_en),           // input
+            .fir_accum_en       (fir_accum_en),     // input
             .data_in            (l_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
+            .test_out           (l_fir_tap_test[i]),   // [9:0] output
             .data_out           (l_data_out[i])     // [47:0] output      
         );        
         
         FIR_Tap fir_tap_r (
             .clk                (clk),              // input              
             .reset_n            (reset_n),          // input
-//            .data_valid_stb     (fir_data_valid),   // input
-            .data_valid_stb     (fir_valid_stb),   // input
+            .fir_mult_clr       (fir_mult_clr),   // input
+            .fir_accum_clr      (fir_accum_clr),   // input
             .fir_en             (fir_en),           // input
+            .fir_accum_en       (fir_accum_en),     // input
             .data_in            (r_buf_data_out),   // [23:0] input    
             .coefficients       (coefficients[i]),  // [15:0] input
+            .test_out           (r_fir_tap_test[i]),   // [9:0] output
             .data_out           (r_data_out[i])     // [47:0] output      
         );        
         
@@ -277,11 +302,11 @@ endgenerate
 // Test modules
 
 //    assign test_data  =  coefficients[coef_select];    
-//    assign test_data  =  r_data_out[coef_select][15:0];
-    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
+    assign test_data  =  {r_data_in[13:8], r_din[13:8], r_data_en, fir_en, data_en, pntr_zero};
+//    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
 //    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
-    assign fir_test_en = fir_en;
+    assign fir_test_en = r_data_valid;
     
 
 endmodule
