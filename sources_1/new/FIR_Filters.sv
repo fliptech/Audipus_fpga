@@ -77,33 +77,41 @@ assign l_data_valid = fir_valid_stb;
 assign r_data_valid = fir_valid_stb;
 
 wire [8:0] coefs_per_tap = {coefs_per_tap_msb, coefs_per_tap_lsb};  // 511 max
-
-
-wire [23:0] impulse = (data_en && (buf_pntr == (coefs_per_tap - 1))) ? 24'h7fff00 : 0;
-//wire [23:0] r_din = impulse_test_en ? impulse : r_data_in;
-//wire [23:0] l_din = impulse_test_en ? impulse : l_data_in;
           
 assign pntr_zero = (buf_pntr == 0);
 
+parameter impulse = 24'h7fff00;
+
+// register input data and inject impulse for impulse test
+//left
 always @ (posedge clk) begin
-    if (impulse_test_en) begin
-        l_din <= impulse;
-    end
-    else if (l_data_en) begin
-        l_din <= l_data_in;
+    if (l_data_en) begin
+        if (impulse_test_en) begin
+            if (pntr_zero)
+                l_din <= impulse ;
+            else
+                l_din <= 0;
+        end
+        else begin
+            l_din <= l_data_in;
+        end
     end
     else begin
         l_din <= l_din;
     end
 end
-
-
+// right
 always @ (posedge clk) begin
-    if (impulse_test_en) begin
-        r_din <= impulse;
-    end
-    else if (r_data_en) begin
-        r_din <= r_data_in;
+    if (r_data_en) begin
+        if (impulse_test_en) begin
+            if (pntr_zero)
+                r_din <= impulse ;
+            else
+                r_din <= 0;
+        end
+        else begin
+            r_din <= r_data_in;
+        end
     end
     else begin
         r_din <= r_din;
@@ -305,7 +313,7 @@ endgenerate
 // Test modules
 
 //    assign test_data  =  coefficients[coef_select];    
-    assign test_data  =  {r_buf_data_out[23:12], fir_mult_clr, fir_en, data_en, pntr_zero};
+    assign test_data  =  {r_din[23:12], fir_mult_clr, fir_en, data_en, pntr_zero};
 //    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
 //    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
