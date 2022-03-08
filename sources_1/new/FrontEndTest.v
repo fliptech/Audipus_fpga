@@ -155,14 +155,20 @@ always @ (posedge clk) begin
 //      SW command:     feTest
         if (data_valid) begin
             case (data_out_select)
-                1: begin    // positive dc value
+                1: begin    // min positive dc value
 //                    frontEnd_data <= 24'h7fff00;
                     frontEnd_data <= 24'h100;
                 end
-                2:  begin    // negative dc value
+                2:  begin    // min negative dc value
+                    frontEnd_data <= 24'hffff00;
+                end
+                3: begin    // max positive dc value
+                    frontEnd_data <= 24'h7fff00;
+                end
+                4:  begin    // max negative dc value
                     frontEnd_data <= 24'h8000ff;
                 end
-                3:  begin
+                5:  begin
                     frontEnd_data <= triangle_count;
 /*                    
                     l_frontEnd_data[23] <= !triangle_count[23];     // define sign bit
@@ -171,7 +177,7 @@ always @ (posedge clk) begin
                     r_frontEnd_data[22:0] <= triangle_count[22:0];
 */                    
                 end
-                4: begin    // impulse
+                6: begin    // impulse
                     if (impulse_count == 1)
                         frontEnd_data <= 24'h7fff00;
                     else
