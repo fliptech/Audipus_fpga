@@ -35,7 +35,7 @@ module EqualizerGains #(
     input [7:0] eq_gain_lsb,
     input [7:0] eq_gain_msb,
     input [1:0] test_sel,
-    output wr_addr_zero,
+//    output wr_addr_zero,
     // pipe input
     input l_data_en,        // expecting a strobe
     input r_data_en,        // expecting a strobe
@@ -52,7 +52,7 @@ module EqualizerGains #(
 );
 
 reg eq_run, eq_wr_dly, eq_valid_stb;
-reg [3:0] eq_wr_addr, eq_rd_addr, eq_rd_addr_dly;
+reg [3:0] eq_rd_addr, eq_rd_addr_dly;
 reg [1:0] eq_run_dly;
 
 wire [63:0] l_mult_out, r_mult_out, l_accum_out, r_accum_out;
@@ -74,14 +74,14 @@ assign r_data_out =         (test_sel == 0) ? {8'h00, r_accum_out[15:0]} :
                             0;
                             
                             
-assign wr_addr_zero = (eq_wr_addr == 0);
+//assign wr_addr_zero = (eq_wr_addr == 0);
 
 
 
 //wire [3:0] eq_rd_addr = bypass ? eq_rd_sel : eq_rd_count;
 //wire [3:0] eq_rd_addr = eq_rd_count;
 
-// coefficient write address generator
+/* coefficient write address generator
 //      auto increments eq_wr_addr after every write
 always @ (posedge clk) begin
     eq_wr_dly <= eq_wr; 
@@ -95,7 +95,7 @@ always @ (posedge clk) begin
             eq_wr_addr <= eq_wr_addr;        
     end        
 end
-            
+*/            
 
 // coefficient read address generator
 always @ (posedge clk) begin 
@@ -128,7 +128,7 @@ end
 ram_2port_16x16 eq_gain_ram (
   .clk              (clk),                          // input wire clk
   .we               (eq_wr),                        // input wire we
-  .a                (eq_wr_addr),                   // input wire [3 : 0] a
+  .a                (eq_wr_sel),                    // input wire [3 : 0] a
   .d                ({eq_gain_msb, eq_gain_lsb}),   // input wire [15 : 0] d
   .dpra             (eq_rd_addr),                   // input wire [3 : 0] dpra
   .dpo              (gain)                          // output wire [15 : 0] dpo

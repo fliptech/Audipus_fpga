@@ -166,7 +166,7 @@ always @ (posedge clk) begin
                     frontEnd_data <= 24'h7fff00;
                 end
                 4:  begin    // max negative dc value
-                    frontEnd_data <= 24'h8000ff;
+                    frontEnd_data <= 24'h800100;
                 end
                 5:  begin
                     frontEnd_data <= triangle_count;

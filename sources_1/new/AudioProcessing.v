@@ -70,7 +70,7 @@ wire pcmToI2S_lrclk;
 wire pcmToI2S_data;
 wire l_eq_valid, r_eq_valid;
 wire sin_wave_valid, l_intrp_dout_valid, r_intrp_dout_valid;
-wire fir_pntr_zero, eq_wr_addr_zero;
+wire fir_pntr_zero;
  
 wire        i2sToPcm_valid;
 //wire        l_PcmToI2S_valid, r_PcmToI2S_valid;
@@ -110,7 +110,7 @@ wire        fir_test_en, eq_test_en;
 
 // audio_status register
 assign audio_status[0]  = fir_pntr_zero;
-assign audio_status[1]  = eq_wr_addr_zero;
+//assign audio_status[1]  = eq_wr_addr_zero;
 
 
 /* 
@@ -220,10 +220,10 @@ EqualizerGains eq_gain (
     .eq_wr          (eq_wr_en),
     .eq_wr_rst      (eq_addr_rst),
     .eq_wr_sel      (eq_select[3:0]),                 // input [num_of_filters - 1 : 0]     
-    .eq_rd_sel      (eq_select[7:4]),                 // input [num_of_filters - 1 : 0]     
+    .eq_rd_sel      (eq_select[7:4]),                 // not used...input [num_of_filters - 1 : 0]     
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
     .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
-    .wr_addr_zero   (eq_wr_addr_zero),                     // output status
+//   .wr_addr_zero   (eq_wr_addr_zero),                     // output status
     .test_sel       (test_d_select),                    // temp       
     // pipe input
     .l_data_en      (l_fir_data_valid),                 // input strobe
@@ -324,13 +324,13 @@ assign test_data_out =
 
 //                        (test_d_select == 3) ? fir_test_data : 
 //                        (test_d_select == 1) ? eq_test_data :                                              
-//                        (test_d_select == 2) ? r_fir_data_out[0][15:0] :
+                        (test_d_select == 3) ? r_fir_data_out[0][15:0] :
 //                        (test_d_select == 3) ? r_fir_data_out[0][31:16] :
-//                        (test_d_select == 3) ? eq_test_data :
                         (test_d_select == 0) ? r_eq_out :
                         (test_d_select == 1) ? r_eq_out :
                         (test_d_select == 2) ? r_eq_out :
-                        (test_d_select == 3) ? r_eq_out :
+//                       (test_d_select == 3) ? r_eq_out :
+//                        (test_d_select == 3) ? eq_test_data :
                         0
 ;
 
@@ -338,11 +338,11 @@ assign test_data_out =
 assign test_dout_valid =    //(test_d_select == 0) ? l_intrp_dout_valid :
                             //(test_d_select == 1) ? fir_test_en :
 //                            (test_d_select == 2) ? r_fir_data_valid & fir_pntr_zero :
-//                            (test_d_select == 3) ? r_fir_data_valid & fir_pntr_zero :
+                            (test_d_select == 3) ? r_fir_data_valid & fir_pntr_zero :
                             (test_d_select == 0) ? r_eq_valid :
                             (test_d_select == 1) ? r_eq_valid :
                             (test_d_select == 2) ? r_eq_valid :
-                            (test_d_select == 3) ? r_eq_valid :
+//                            (test_d_select == 3) ? r_eq_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
 //                            (test_d_select == 3) ? frontEnd_valid :
                             0

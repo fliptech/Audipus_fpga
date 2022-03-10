@@ -203,6 +203,7 @@ parameter num_of_filters = 4;
         .coef_select_reg        (coef_select_reg),
         .coef_wr_lsb_data_reg   (fir_coef_lsb),
         .coef_wr_msb_data_reg   (fir_coef_msb),
+        .eq_select_reg          (eq_select_reg),
         .eq_wr_lsb_data_reg     (eq_gain_lsb),
         .eq_wr_msb_data_reg     (eq_gain_msb),
         //sram
