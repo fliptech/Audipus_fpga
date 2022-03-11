@@ -187,7 +187,7 @@ FIR_Filters filters (
     // coefficient signals
     .coef_addr_rst      (coef_addr_rst),        // resets coef wr addr
     .coefficient_wr_en  (coef_wr_en),           // input stb when coef wr data in valid
-    .coef_select        (coef_select[5:0]),   // [num_of_filters - 1:0] input
+    .coef_select        (coef_select[num_of_filters - 1 :0]),   // [num_of_filters - 1:0] input
     .coef_wr_lsb_data   (coef_wr_lsb_data),     // [7:0] input, cpu reg
     .coef_wr_msb_data   (coef_wr_msb_data),     // [7:0] input, cpu reg
     .coefs_per_tap_lsb  (coefs_per_tap_lsb),    // [7:0] input, cpu reg

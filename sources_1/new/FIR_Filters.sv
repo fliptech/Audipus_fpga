@@ -29,7 +29,7 @@ module FIR_Filters #(
     // coefficient signals   
     input           coef_addr_rst,
     input           coefficient_wr_en,
-    input [5:0]     coef_select,        // selects which coefficient RAM to write and rd via test
+    input [taps_per_filter - 1 :0]     coef_select,  // selects which coefficient RAM to write and rd via test
     input [7:0]     coef_wr_lsb_data,   // must be written AFTER coef_wr_msb_data
     input [7:0]     coef_wr_msb_data,
     input [7:0]     coefs_per_tap_lsb,  // must be written AFTER coef_wr_msb_data
