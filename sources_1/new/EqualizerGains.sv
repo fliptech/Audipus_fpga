@@ -29,9 +29,8 @@ module EqualizerGains #(
 //    input bypass,           // choses one filter
     // cpu interface
     input eq_wr,
-    input eq_wr_rst,
-    input [3:0] eq_wr_sel,    
-    input [3:0] eq_rd_sel,    
+//    input eq_wr_rst,
+    input [num_of_filters-1:0] eq_wr_sel,    
     input [7:0] eq_gain_lsb,
     input [7:0] eq_gain_msb,
     input [1:0] test_sel,
@@ -52,13 +51,12 @@ module EqualizerGains #(
 );
 
 reg eq_run, eq_wr_dly, eq_valid_stb;
-reg [3:0] eq_rd_addr, eq_rd_addr_dly;
-reg [1:0] eq_run_dly;
+reg [3:0] eq_rd_addr, eq_rd_addr_dly1;
+reg [2:0] eq_run_dly;
 
 wire [63:0] l_mult_out, r_mult_out, l_accum_out, r_accum_out;
 wire [15:0] gain;
 wire clken = 1'b1;
-wire bypass = 1'b0;
 
 assign l_data_valid = eq_valid_stb;
 assign r_data_valid = eq_valid_stb;
@@ -109,8 +107,8 @@ always @ (posedge clk) begin
         eq_run <= eq_run;
 end
 
-always @ (posedge clk) begin 
-    eq_rd_addr_dly <= eq_rd_addr;
+always @ (posedge clk) begin            // <<<<< check this
+    eq_rd_addr_dly1 <= eq_rd_addr;
     if (!eq_run) 
         eq_rd_addr <= 0;
     else
@@ -119,37 +117,36 @@ end
 
 always @ (posedge clk) begin
     eq_run_dly[0] <= eq_run;
-    eq_run_dly[1] <= eq_run_dly[0];   
-    eq_valid_stb <=  eq_run_dly[1] & !eq_run_dly[0];
+    eq_run_dly[2:1] <= eq_run_dly[1:0];   
+    eq_valid_stb <=  eq_run_dly[2] & !eq_run_dly[1];
 end
 
-    
-// RAM holding the gains for each (16) eq element    
+// RAM holding the gains for each (16) eq element... pipeline stage = 1   
 ram_2port_16x16 eq_gain_ram (
   .clk              (clk),                          // input wire clk
   .we               (eq_wr),                        // input wire we
   .a                (eq_wr_sel),                    // input wire [3 : 0] a
   .d                ({eq_gain_msb, eq_gain_lsb}),   // input wire [15 : 0] d
   .dpra             (eq_rd_addr),                   // input wire [3 : 0] dpra
-  .dpo              (gain)                          // output wire [15 : 0] dpo
+  .qdpo             (gain)                          // output wire [15 : 0] dpo
 );
 
-// defines the weight of each eq element (left chnl)       
+// defines the weight of each eq element (left chnl)... pipeline stage = 1         
 mult_48x16 left_eq_mult (
   .CLK              (clk),                          // input wire CLK
-  .SCLR             (eq_valid_stb),                    // input wire SCLR
-  .CE               (eq_run),                       // input wire CE
-  .A                (l_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
+  .SCLR             (eq_valid_stb),                 // input wire SCLR
+  .CE               (eq_run_dly[0]),                // input wire CE
+  .A                (l_data_in[eq_rd_addr_dly1]),    // input wire [47 : 0] A
   .B                (gain),                         // input wire [15 : 0] B
   .P                (l_mult_out)                    // output wire [63 : 0] P
 );
  
-// defines the weight of each eq element (right chnl)       
+// defines the weight of each eq element (right chnl)... pipeline stage = 1         
 mult_48x16 right_eq_mult (
   .CLK              (clk),                          // input wire CLK
-  .SCLR             (eq_valid_stb),                    // input wire SCLR
-  .CE               (eq_run),                       // input wire CE
-  .A                (r_data_in[eq_rd_addr_dly]),    // input wire [47 : 0] A
+  .SCLR             (eq_valid_stb),                 // input wire SCLR
+  .CE               (eq_run_dly[0]),                // input wire CE
+  .A                (r_data_in[eq_rd_addr_dly1]),    // input wire [47 : 0] A  <<<<<<
   .B                (gain),                         // input wire [15 : 0] B
   .P                (r_mult_out)                    // output wire [63 : 0] P
 );
@@ -157,35 +154,31 @@ mult_48x16 right_eq_mult (
 // adds all of the eq elements together (left)
 eq_accum left_eq_accum (
   .CLK          (clk),              // input wire CLK
-//  .CE           (eq_run_dly[1]),    // input wire CE
-  .CE           (eq_run_dly[0] | eq_valid_stb),    // input wire CE
+  .CE           (eq_run_dly[1]),    // input wire CE
   .SCLR         (eq_valid_stb),     // input wire SCLR
-  .BYPASS       (bypass),           // input wire BYPASS
   .B            (l_mult_out),       // input wire [63 : 0] B
   .Q            (l_accum_out)       // output wire [63 : 0] Q
 );
  
-// adds all of the eq elements together (right)
+// adds all of the eq elements together (right)... pipeline stage = 1  
 eq_accum right_eq_accum (
   .CLK          (clk),              // input wire CLK
-//  .CE           (eq_run_dly[1]),    // input wire CE
-  .CE           (eq_run_dly[0] | eq_valid_stb),    // input wire CE
+  .CE           (eq_run_dly[1]),    // input wire CE
   .SCLR         (eq_valid_stb),     // input wire SCLR
-  .BYPASS       (bypass),           // input wire BYPASS
   .B            (r_mult_out),       // input wire [63 : 0] B
   .Q            (r_accum_out)       // output wire [63 : 0] Q
 );
 
 //assign eq_test_d = {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run};
 assign eq_test_en = eq_run;
-//assign eq_test_d1 = {2'b00, l_data_en, r_data_en, eq_wr_addr, eq_wr_rst, 2'b00, eq_rd_addr, eq_run};
-
+assign eq_test_d = {r_mult_out[7:0], gain[3:0], eq_rd_addr[1:0], eq_valid_stb, eq_run};
+/*
 assign eq_test_d =      (test_sel == 0) ? {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run} :
                         (test_sel == 1) ? {r_data_in[eq_rd_addr_dly][11:0], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
                         (test_sel == 2) ? {r_mult_out[11:0], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
                         (test_sel == 3) ? {r_mult_out[23:12], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :
                         0;
-
+*/
 
 
 endmodule

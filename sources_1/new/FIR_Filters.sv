@@ -312,12 +312,13 @@ endgenerate
 
 // Test modules
 
-//    assign test_data  =  coefficients[coef_select];    
-    assign test_data  =  {r_din[23:12], fir_mult_clr, fir_en, data_en, pntr_zero};
+//    assign test_data  =  {coef_select, coef_wr_en[coef_select], coef_wr_addr[2:0], coef_wr_data[7:0]};    
+    assign test_data  =  {coef_wr_en, coef_select[1:0], coef_wr_addr[1:0], coef_wr_data[7:0]};    
+//    assign test_data  =  {r_din[23:12], fir_mult_clr, fir_en, data_en, pntr_zero};
 //    assign test_data  =  {r_buf_data_out[23:17], buf_rd_addr};
 //    assign test_data  =  {r_buf_data_out[23:17], coefficients[0][15:7]};
     
-    assign fir_test_en = r_data_valid;
+    assign fir_test_en = coefficient_wr_en;
     
 
 endmodule
