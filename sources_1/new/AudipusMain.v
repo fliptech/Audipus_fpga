@@ -86,6 +86,7 @@ parameter num_of_filters = 4;
     wire [7:0] audio_status_reg;
     wire [7:0] audio_control_reg;
     wire [7:0] eq_select_reg;
+    wire [7:0] eq_shift_reg;
     wire [7:0] coef_select_reg;
     wire [7:0] coefs_per_tap_lsb_reg;
     wire [7:0] fir_coef_msb, fir_coef_lsb;
@@ -204,6 +205,7 @@ parameter num_of_filters = 4;
         .coef_wr_lsb_data_reg   (fir_coef_lsb),
         .coef_wr_msb_data_reg   (fir_coef_msb),
         .eq_select_reg          (eq_select_reg),
+        .eq_shift_reg           (eq_shift_reg),
         .eq_wr_lsb_data_reg     (eq_gain_lsb),
         .eq_wr_msb_data_reg     (eq_gain_msb),
         //sram
@@ -264,6 +266,7 @@ parameter num_of_filters = 4;
         .coef_wr_lsb_data   (fir_coef_lsb),
         .coef_wr_msb_data   (fir_coef_msb),
         .eq_select          (eq_select_reg),
+        .eq_shift_reg       (eq_shift_reg),
         .eq_wr_lsb_data     (eq_gain_lsb),
         .eq_wr_msb_data     (eq_gain_msb),
         .audio_status       (audio_status_reg),

@@ -50,6 +50,7 @@ module AudioProcessing #(
     input [7:0] eq_select,          // cpu reg 
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
+    input [7:0] eq_shift_reg,       // cpu reg
     input [7:0] test_reg,           // cpu reg
     input [7:0] fe_test_reg,        // cpu reg
     input [7:0] triangle_inc_reg,   // cpu reg
@@ -218,11 +219,10 @@ EqualizerGains eq_gain (
 //    .bypass         (eq_bypass),
     // cpu interface
     .eq_wr          (eq_wr_en),
-//    .eq_wr_rst      (eq_addr_rst),
-    .eq_wr_sel      (eq_select[num_of_filters-1:0]),                 // input [num_of_filters - 1 : 0]     
+    .eq_wr_sel      (eq_select[num_of_filters-1:0]),    // input [num_of_filters - 1 : 0]     
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
     .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
-//   .wr_addr_zero   (eq_wr_addr_zero),                     // output status
+    .eq_shift       (eq_shift_reg[3:0]),                // input [3:0]     
     .test_sel       (test_d_select),                    // temp       
     // pipe input
     .l_data_en      (l_fir_data_valid),                 // input strobe
@@ -305,7 +305,9 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .s_data         (dac_data),         // output
     // for test
     .i2s_valid      (dac_valid)         // output
-); 
+);
+
+ 
 
 //  TEST
 
@@ -322,13 +324,15 @@ assign test_data_out =
 //                        (test_d_select == 2) ? {fir_pntr_zero, r_fir_data_out[0][47:31]} :
 
 //                        (test_d_select == 3) ? fir_test_data : 
-//                        (test_d_select == 3) ? r_fir_data_out[0][15:0] :
-//                        (test_d_select == 3) ? r_fir_data_out[0][31:16] :
-                        (test_d_select == 0) ? r_eq_out :
-                        (test_d_select == 1) ? r_eq_out :
-                        (test_d_select == 2) ? r_eq_out :
+                        (test_d_select == 0) ? r_fir_data_out[2][31:16] :
+                        (test_d_select == 1) ? r_fir_data_out[2][47:32] :
+//                        (test_d_select == 0) ? r_eq_out[15:0] :
+//                        (test_d_select == 1) ? r_eq_out[23:8] :
+                        (test_d_select == 2) ? r_eq_out[23:8] :
+                        (test_d_select == 3) ? r_eq_out[23:8] :
+//                        (test_d_select == 2) ? r_eq_out :
 //                        (test_d_select == 3) ? r_eq_out :
-                        (test_d_select == 3) ? eq_test_data :
+//                        (test_d_select == 3) ? eq_test_data :
                         0
 ;
 
@@ -337,8 +341,8 @@ assign test_dout_valid =    //(test_d_select == 0) ? l_intrp_dout_valid :
  //                           (test_d_select == 3) ? fir_test_en :
 //                            (test_d_select == 2) ? r_fir_data_valid & fir_pntr_zero :
 //                            (test_d_select == 3) ? r_fir_data_valid & fir_pntr_zero :
-                            (test_d_select == 0) ? r_eq_valid :
-                            (test_d_select == 1) ? r_eq_valid :
+                            (test_d_select == 0) ? r_fir_data_valid :
+                            (test_d_select == 1) ? r_fir_data_valid :
                             (test_d_select == 2) ? r_eq_valid :
                             (test_d_select == 3) ? r_eq_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
