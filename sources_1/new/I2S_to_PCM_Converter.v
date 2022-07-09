@@ -21,7 +21,8 @@
 
 
 module I2S_to_PCM_Converter # (
-    parameter MAX_NUM_OF_INPUT_BITS = 24
+    parameter MAX_NUM_OF_INPUT_BITS = 32,
+    parameter MAX_NUM_OF_OUTPUT_BITS = 24
 ) (
     input               clk,
     input               reset_n,
@@ -39,9 +40,9 @@ module I2S_to_PCM_Converter # (
 reg         bclk_en, l_dout_valid, r_dout_valid;
 reg         lrclk_dly;
 reg [2:0]   bclk_shift;
-reg [23:0]  lr_shift_data, l_d_out, r_d_out, l_scaled_d, r_scaled_d;
 reg [7:0]   i2s_bit_cnt, shift_bit_cnt;
 reg [9:0]   sub_sample_counter;
+reg [MAX_NUM_OF_INPUT_BITS-1:0]  lr_shift_data, l_d_out, r_d_out, l_scaled_d, r_scaled_d;
 
 assign dout_valid = r_dout_valid & bclk_en;   // only right (or only left) data_valid is necessary
 
@@ -55,7 +56,7 @@ always @ (posedge clk) begin
         bclk_en <= 1'b0;
 end
 
-// lrclk edge detect, bit count & valid generation
+// lrclk edge detect strobe, bit count & valid generation
 // load shifted data                
 always @ (posedge clk) begin
     if(bclk_en) begin
@@ -80,14 +81,14 @@ always @ (posedge clk) begin
     end
 end        
 
-
+// Shift In I2S data
 always @ (posedge clk) begin
     if(bclk_en) begin
-        if (l_dout_valid || r_dout_valid) begin
+        if (l_dout_valid || r_dout_valid) begin // l,r valid strobe
             bit_cnt_reg <= i2s_bit_cnt;
             i2s_bit_cnt <= 0;
             lr_shift_data[0] <= i2s_data;
-            lr_shift_data[23:1] <= 0;
+            lr_shift_data[MAX_NUM_OF_INPUT_BITS-1:1] <= 0;
             if (!lrclk) begin       // left chnl
                 l_d_out <= lr_shift_data;
             end
@@ -98,7 +99,7 @@ always @ (posedge clk) begin
         else begin
             i2s_bit_cnt <= i2s_bit_cnt + 1;
             lr_shift_data[0] <= i2s_data;
-            lr_shift_data[23:1] <= lr_shift_data[22:0];
+            lr_shift_data[MAX_NUM_OF_INPUT_BITS-1:1] <= lr_shift_data[MAX_NUM_OF_INPUT_BITS-2:0];
             l_d_out <= l_d_out;
             r_d_out <= r_d_out;
         end
@@ -117,8 +118,8 @@ assign  l_pcm_data =  (test_sel == 3) ? l_scaled_d : l_d_out;
 assign  r_pcm_data =  (test_sel == 3) ? r_scaled_d : r_d_out;
 */
 
-assign  l_pcm_data =  l_scaled_d;
-assign  r_pcm_data =  r_scaled_d;
+assign  l_pcm_data =  l_scaled_d[MAX_NUM_OF_INPUT_BITS-1:MAX_NUM_OF_INPUT_BITS-MAX_NUM_OF_OUTPUT_BITS];
+assign  r_pcm_data =  r_scaled_d[MAX_NUM_OF_INPUT_BITS-1:MAX_NUM_OF_INPUT_BITS-MAX_NUM_OF_OUTPUT_BITS];
         
 // BARREL SHIFTER <<< check this
 
@@ -144,9 +145,9 @@ always @ (posedge clk) begin
             if (shift_bit_cnt < (MAX_NUM_OF_INPUT_BITS - 1)) begin
                 shift_bit_cnt <= shift_bit_cnt + 1;
                 l_scaled_d[0] <= 1'b0;
-                l_scaled_d[23:1] <= l_scaled_d[22:0];
+                l_scaled_d[MAX_NUM_OF_INPUT_BITS-1:1] <= l_scaled_d[MAX_NUM_OF_INPUT_BITS-2:0];
                 r_scaled_d[0] <= 1'b0;
-                r_scaled_d[23:1] <= r_scaled_d[22:0];
+                r_scaled_d[MAX_NUM_OF_INPUT_BITS-1:1] <= r_scaled_d[MAX_NUM_OF_INPUT_BITS-2:0];
                 state = 1;
             end        
             else begin

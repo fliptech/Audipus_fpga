@@ -315,7 +315,7 @@ PCM_to_I2S_Converter pcm_to_i2s(
 //assign test_dout_valid = r_eq_valid; 
 
 // test from mux 
-assign test_data_out =  
+assign test_data_out =      r_mux_out[23:8];   
 //                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
 //                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
 //                        (test_d_select == 0) ? r_intrp_d_out[23:8] :
@@ -324,31 +324,32 @@ assign test_data_out =
 //                        (test_d_select == 2) ? {fir_pntr_zero, r_fir_data_out[0][47:31]} :
 
 //                        (test_d_select == 3) ? fir_test_data : 
-                        (test_d_select == 0) ? r_fir_data_out[2][31:16] :
-                        (test_d_select == 1) ? r_fir_data_out[2][47:32] :
+//                        (test_d_select == 0) ? r_fir_data_out[2][31:16] :
+//                        (test_d_select == 1) ? r_fir_data_out[2][47:32] :
 //                        (test_d_select == 0) ? r_eq_out[15:0] :
 //                        (test_d_select == 1) ? r_eq_out[23:8] :
-                        (test_d_select == 2) ? r_eq_out[23:8] :
-                        (test_d_select == 3) ? r_eq_out[23:8] :
+//                        (test_d_select == 2) ? r_eq_out[23:8] :
+//                        (test_d_select == 3) ? r_eq_out[23:8] :
 //                        (test_d_select == 2) ? r_eq_out :
 //                        (test_d_select == 3) ? r_eq_out :
 //                        (test_d_select == 3) ? eq_test_data :
-                        0
-;
+//                        0
+//;
 
 
-assign test_dout_valid =    //(test_d_select == 0) ? l_intrp_dout_valid :
- //                           (test_d_select == 3) ? fir_test_en :
+assign test_dout_valid =    r_mux_valid;
+//                            (test_d_select == 0) ? l_intrp_dout_valid :
+//                            (test_d_select == 3) ? fir_test_en :
 //                            (test_d_select == 2) ? r_fir_data_valid & fir_pntr_zero :
 //                            (test_d_select == 3) ? r_fir_data_valid & fir_pntr_zero :
-                            (test_d_select == 0) ? r_fir_data_valid :
-                            (test_d_select == 1) ? r_fir_data_valid :
-                            (test_d_select == 2) ? r_eq_valid :
-                            (test_d_select == 3) ? r_eq_valid :
+//                            (test_d_select == 0) ? r_fir_data_valid :
+//                            (test_d_select == 1) ? r_fir_data_valid :
+//                            (test_d_select == 2) ? r_eq_valid :
+//                            (test_d_select == 3) ? r_eq_valid :
 //                            (test_d_select == 2) ? l_intrp_dout_valid :
 //                            (test_d_select == 3) ? frontEnd_valid :
-                            0
-;
+//                            0
+//;
   
 
 endmodule

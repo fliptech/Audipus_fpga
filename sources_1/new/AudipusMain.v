@@ -102,7 +102,7 @@ parameter num_of_filters = 4;
     
     wire [7:0] eq_gain_lsb, eq_gain_msb;
     
-    wire            clkGen_i2s_clk;
+    wire            clkGen_i2s_clk;         // 24.576MHz
     assign pcm9211_clk = clkGen_i2s_clk; 
     assign i2s_clk_out = clkGen_i2s_clk; 
     assign dac_sclk = clkGen_i2s_clk; 
@@ -168,7 +168,7 @@ parameter num_of_filters = 4;
         .main_clk   (main_clk),
         .reset_n    (reset_n),
         .sys_clk    (clk),
-        .i2s_sclk   (clkGen_i2s_clk),
+        .i2s_sclk   (clkGen_i2s_clk),   // 24.576MHz
         .locked     (sys_clk_locked)
     );
     
@@ -313,18 +313,20 @@ parameter num_of_filters = 4;
 */ 
 // I2S Test
 //    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
- /* 
+  
     assign test[2:0] = {pcm9211_i2s_d, pcm9211_i2s_lrclk, pcm9211_i2s_bclk};
-    assign test[3] = test_dout_valid;
-    assign test [15:4] = test_data_out[11:0];
- */      
+    assign test[3] = pcm9211_mpio0;
+//    assign test[3] = test_dout_valid;
+    assign test [15:4] = test_data_out[15:4];
+       
 
+/*
 always @ (posedge clk) begin
            
     test [15:0] <= test_data_out;
     test[16] <= test_dout_valid;  // clk qualifier
 end
-    
+*/    
 assign test_clk = clk;      
 
             
