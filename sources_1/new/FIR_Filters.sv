@@ -169,7 +169,7 @@ always @ (posedge clk) begin
             if (buf_rd_addr == (coefs_per_tap - 1))
                  buf_rd_addr <= 0;
             else
-                buf_rd_addr <= buf_rd_addr + 1;         
+                buf_rd_addr <= buf_rd_addr + 1;      // for cntrclkwise turn       
             buf_pntr <= buf_pntr;
         end
         else begin
