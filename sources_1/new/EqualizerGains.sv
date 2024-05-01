@@ -34,7 +34,8 @@ module EqualizerGains #(
     input [num_of_filters-1:0] eq_wr_sel,    
     input [7:0] eq_gain_lsb,
     input [7:0] eq_gain_msb,
-    input [3:0] eq_shift,
+    input [7:0] scale_value_lsb,
+    input [7:0] scale_value_msb,
     input [1:0] test_sel,
 //    output wr_addr_zero,
     // pipe input
@@ -52,20 +53,25 @@ module EqualizerGains #(
     
 );
 
-parameter scale_value = 6716;
+//parameter scale_value = 6716;
 
 reg eq_run, eq_wr_dly, eq_valid_stb, scaler_mult_ce;
 reg [3:0] eq_rd_addr, eq_rd_addr_dly1;
 reg [2:0] eq_run_dly;
 
-wire [63:0] l_mult_out, r_mult_out, l_accum_out, r_accum_out;
+wire [63:0] l_mult_out, r_mult_out, l_accum_out, r_accum_out, scaler_mult_in;
 //reg [63:0]  l_shifted_accum_out, r_shifted_accum_out;
-reg [63:0]  scaler_mult_in;
+reg [63:0]  l_eq_summed_data, r_eq_summed_data;
+
+wire [23:0] scaler_mult_out;
 wire [15:0] gain;
 wire clken = 1'b1;
 
 reg [3:0]   shift_cnt;
 reg         hold, data_valid;
+reg         scaler_mult_l_sel;
+
+wire [12:0] scaler_value = {scale_value_msb[4:0], scale_value_lsb[7:0]}; 
 
 assign l_data_valid = data_valid;
 assign r_data_valid = data_valid;
@@ -160,129 +166,101 @@ eq_accum right_eq_accum (
 
 
 
-/* Output Bit Shifter
-always @ (posedge clk) begin
-    if (eq_valid_stb) begin
-        hold <= 1'b0;
-        shift_cnt <= eq_shift;      // load count
-        l_data_valid <= 1'b0;
-        r_data_valid <= 1'b0;
-        l_shifted_accum_out <= l_accum_out;
-        r_shifted_accum_out <= r_accum_out;
-    end
-    else if (shift_cnt == 0) begin
-        if (!hold) begin
-            hold <= 1'b1;
-            l_data_valid <= 1'b1;
-            r_data_valid <= 1'b1;
-        end
-        else begin
-            hold <= hold;
-            l_data_valid <= 1'b0;
-            r_data_valid <= 1'b0;
-        end
-        shift_cnt <= 0;
-        l_shifted_accum_out <= l_shifted_accum_out;
-        r_shifted_accum_out <= r_shifted_accum_out;
-    end
-    else begin
-        hold <= hold;
-        l_data_valid = 1'b0;
-        r_data_valid = 1'b0;
-        shift_cnt <= shift_cnt - 1;
-        l_shifted_accum_out[0] <= 1'b0;
-        r_shifted_accum_out[0] <= 1'b0;
-        l_shifted_accum_out[63:1] <= l_shifted_accum_out[62:0];
-        r_shifted_accum_out[63:1] <= r_shifted_accum_out[62:0];
-    end
-end
-*/
 
 // Output Scaler        
 // scaler state machine
-enum reg[3:0] {IDLE, LEFT, RIGHT, LEFT_STB, LEFT_EN, RIGHT_STB, RIGHT_EN, D_VALID} eq_scaler_state;
+
+reg [2:0] eq_scaler_state;
+
+assign scaler_mult_in = scaler_mult_l_sel ? l_eq_summed_data : r_eq_summed_data;
 
 always @ (posedge clk) begin
-    if (reset_n == 1'b0) eq_scaler_state <= IDLE;
+    if (reset_n == 1'b0) eq_scaler_state <= 3'b000;
     case (eq_scaler_state) 
-        IDLE: begin
+        3'b000: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= scaler_mult_in;
+            scaler_mult_l_sel <= 1'b1;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;
-            if (eq_valid_stb)          // start another cycle
-               eq_scaler_state <= LEFT;
-            else          
-               eq_scaler_state <= IDLE;
+            if (eq_valid_stb) begin          // start another cycle
+                l_eq_summed_data <= l_accum_out;
+                r_eq_summed_data <= r_accum_out;
+                eq_scaler_state <= 3'b001;
+            end
+            else begin         
+               eq_scaler_state <= 3'b000;
+               l_eq_summed_data <= l_eq_summed_data;
+               r_eq_summed_data <= r_eq_summed_data;
+            end
         end           
-        LEFT: begin
+        3'b001: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b1;
-            scaler_mult_in <= l_accum_out;
+            scaler_mult_l_sel <= 1'b1;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;
-            eq_scaler_state <= LEFT_STB;
+            eq_scaler_state <= 3'b010;
         end
-        LEFT_STB: begin
+        3'b010: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= l_accum_out;
+            scaler_mult_l_sel <= 1'b1;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;
-            eq_scaler_state <= LEFT_EN; 
+            eq_scaler_state <= 3'b011; 
         end        
-        LEFT_EN: begin
+        3'b011: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= r_accum_out;
+            scaler_mult_l_sel <= 1'b0;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;
-            eq_scaler_state <= RIGHT; 
+            eq_scaler_state <= 3'b100; 
         end        
-        RIGHT: begin
+        3'b100: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b1;
-            scaler_mult_in <= r_accum_out;
-            l_data_out <= scaler_data_out;            
+            scaler_mult_l_sel <= 1'b0;
+            l_data_out <= scaler_mult_out;            
             r_data_out <= r_data_out;
-            eq_scaler_state <= RIGHT_STB;
+            eq_scaler_state <= 3'b101;
         end
-        RIGHT_STB: begin
+        3'b101: begin
             data_valid <= 1'b0;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= scaler_mult_in;
+            scaler_mult_l_sel <= 1'b0;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;
-            eq_scaler_state <= RIGHT_EN;             
+            eq_scaler_state <= 3'b110;             
         end        
-        RIGHT_EN: begin
-            data_valid = 1'b1;
+        3'b110: begin
+            data_valid = 1'b0;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= scaler_mult_in;
+            scaler_mult_l_sel <= 1'b0;
             l_data_out <= l_data_out;
             r_data_out <= r_data_out;            
-            eq_scaler_state <= D_VALID; 
+            eq_scaler_state <= 3'b111; 
         end        
-        D_VALID: begin
+        3'b111: begin
             data_valid = 1'b1;
             scaler_mult_ce <= 1'b0;
-            scaler_mult_in <= scaler_mult_in;
+            scaler_mult_l_sel <= 1'b0;
             l_data_out <= l_data_out;
-            r_data_out <= scaler_data_out;            
-            eq_scaler_state <= IDLE; 
+            r_data_out <= scaler_mult_out;            
+            eq_scaler_state <= 3'b000; 
         end        
     endcase
 end 
 
 // eq scaler multiplier        
 eq_output_scaler eq_scaler (
-    .CLK            (clk),              // input wire CLK
-    .CE             (scaler_mult_ce),   // input wire CE
-    .SCLR           (~reset_n),         // input wire SCLR
-    .A              (scale_value),      // input wire [12 : 0] A
-    .B              (scaler_mult_in),   // input wire [63 : 0] B
-    .P              (scaler_data_out)        // output wire [23 : 0] P
+    .CLK            (clk),                                  // input wire CLK
+    .CE             (scaler_mult_ce),                       // input wire CE
+    .SCLR           (~reset_n),                             // input wire SCLR
+    .A              (scale_value),                          // input wire [12 : 0] A
+    .B              (scaler_mult_in),                       // input wire [63 : 0] B
+    .P              (scaler_mult_out)                       // output wire [23 : 0] P
 );
 
 
@@ -292,7 +270,10 @@ eq_output_scaler eq_scaler (
 
 //assign eq_test_d = {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run};
 assign eq_test_en = eq_run;
-assign eq_test_d = {r_mult_out[7:0], gain[3:0], eq_rd_addr[1:0], eq_valid_stb, eq_run};
+
+assign eq_test_d = {scaler_mult_out[23:14], eq_scaler_state[2:0], data_valid, eq_valid_stb, eq_run};
+
+//assign eq_test_d = {r_mult_out[7:0], gain[3:0], eq_rd_addr[1:0], eq_valid_stb, eq_run};
 /*
 assign eq_test_d =      (test_sel == 0) ? {r_data_in[eq_rd_addr_dly][11:0], gain[7:5], eq_run} :
                         (test_sel == 1) ? {r_data_in[eq_rd_addr_dly][11:0], eq_rd_addr[1:0], eq_run_dly[0], eq_run} :

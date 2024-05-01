@@ -55,7 +55,8 @@ module spi_Interface # (
     output reg [7:0]    coef_wr_msb_data_reg,
     // Equalizer
     output reg [7:0]    eq_select_reg,
-    output reg [7:0]    eq_shift_reg,
+    output reg [7:0]    eq_scaler_lsb_reg,
+    output reg [7:0]    eq_scaler_msb_reg,
     output reg [7:0]    eq_wr_lsb_data_reg,
     output reg [7:0]    eq_wr_msb_data_reg,
     // sram
@@ -113,7 +114,8 @@ wire [6:0] status_reg = 0;
 	parameter I2SPCM_BIT_CNT   = 7'h14;    // number of bits in the i2sToPcm data
 	parameter FE_TEST          = 7'h15;    // front end test Reg
     parameter TRIANGLE_INC     = 7'h16;    // (fe_test) triangle test wave Reg
-    parameter EQ_SHIFT         = 7'h17;    // number of left shifts of the Eq data out for scaling
+    parameter EQ_SCALER_LSB    = 7'h17;    // number of left shifts of the Eq data out for scaling
+    parameter EQ_SCALER_MSB    = 7'h18;    // number of left shifts of the Eq data out for scaling
 
 
 
@@ -159,7 +161,8 @@ always @ (posedge clk) begin
 			else if (spi_addr == TEST)           test_reg                    <= spi_write_data;
 			else if (spi_addr == FE_TEST)        fe_test_reg                 <= spi_write_data;
 			else if (spi_addr == TRIANGLE_INC)   triangle_inc_reg            <= spi_write_data;
-			else if (spi_addr == EQ_SHIFT)       eq_shift_reg                <= spi_write_data;
+			else if (spi_addr == EQ_SCALER_LSB)  eq_scaler_lsb_reg           <= spi_write_data;
+			else if (spi_addr == EQ_SCALER_MSB)  eq_scaler_msb_reg           <= spi_write_data;
     end
 end
 
@@ -184,7 +187,8 @@ always @ (posedge clk) begin
             (spi_addr == FE_TEST)        ?   fe_test_reg :
             (spi_addr == TRIANGLE_INC)   ?   triangle_inc_reg :
             (spi_addr == EQ_SEL)         ?   eq_select_reg :
-            (spi_addr == EQ_SHIFT)       ?   eq_shift_reg :
+            (spi_addr == EQ_SCALER_LSB)  ?   eq_scaler_lsb_reg :
+            (spi_addr == EQ_SCALER_MSB)  ?   eq_scaler_msb_reg :
             
             8'h99;
     end

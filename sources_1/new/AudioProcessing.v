@@ -50,7 +50,8 @@ module AudioProcessing #(
     input [7:0] eq_select,          // cpu reg 
     input [7:0] eq_wr_lsb_data,     // cpu reg
     input [7:0] eq_wr_msb_data,     // cpu reg
-    input [7:0] eq_shift_reg,       // cpu reg
+    input [7:0] eq_scaler_lsb_reg,  // cpu reg
+    input [7:0] eq_scaler_msb_reg,  // cpu reg
     input [7:0] test_reg,           // cpu reg
     input [7:0] fe_test_reg,        // cpu reg
     input [7:0] triangle_inc_reg,   // cpu reg
@@ -222,7 +223,8 @@ EqualizerGains eq_gain (
     .eq_wr_sel      (eq_select[num_of_filters-1:0]),    // input [num_of_filters - 1 : 0]     
     .eq_gain_lsb    (eq_wr_lsb_data),                   // input [7:0] 
     .eq_gain_msb    (eq_wr_msb_data),                   // input [7:0]
-    .eq_shift       (eq_shift_reg[3:0]),                // input [3:0]     
+    .scale_value_msb    (eq_scaler_msb_reg),            // input [7:0]
+    .scale_value_lsb    (eq_scaler_lsb_reg),            // input [7:0]
     .test_sel       (test_d_select),                    // temp       
     // pipe input
     .l_data_en      (l_fir_data_valid),                 // input strobe
