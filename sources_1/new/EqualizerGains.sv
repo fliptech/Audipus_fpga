@@ -71,7 +71,7 @@ reg [3:0]   shift_cnt;
 reg         hold, data_valid;
 reg         scaler_mult_l_sel;
 
-wire [12:0] scaler_value = {scale_value_msb[4:0], scale_value_lsb[7:0]}; 
+wire [12:0] scale_value = {scale_value_msb[4:0], scale_value_lsb[7:0]}; 
 
 assign l_data_valid = data_valid;
 assign r_data_valid = data_valid;
