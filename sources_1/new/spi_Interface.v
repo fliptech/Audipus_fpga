@@ -44,6 +44,7 @@ module spi_Interface # (
     input [7:0]         i2sToPcm_bit_reg,
     input [7:0]         sram_to_spi_data,
     input [7:0]         mpio_to_spi_data,
+    input [7:0]         rotary_encoder_reg,
      
 //  output registers
     // Audio
@@ -116,7 +117,7 @@ wire [6:0] status_reg = 0;
     parameter TRIANGLE_INC     = 7'h16;    // (fe_test) triangle test wave Reg
     parameter EQ_SCALER_LSB    = 7'h17;    // number of left shifts of the Eq data out for scaling
     parameter EQ_SCALER_MSB    = 7'h18;    // number of left shifts of the Eq data out for scaling
-
+    parameter ROTARY_ENCODER   = 7'h19;    // number of rotary encoder clicks 
 
 
 
@@ -189,6 +190,7 @@ always @ (posedge clk) begin
             (spi_addr == EQ_SEL)         ?   eq_select_reg :
             (spi_addr == EQ_SCALER_LSB)  ?   eq_scaler_lsb_reg :
             (spi_addr == EQ_SCALER_MSB)  ?   eq_scaler_msb_reg :
+            (spi_addr == ROTARY_ENCODER) ?   rotary_encoder_reg :
             
             8'h99;
     end
