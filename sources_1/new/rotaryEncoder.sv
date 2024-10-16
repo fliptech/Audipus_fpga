@@ -29,15 +29,20 @@ module rotaryEncoder # (
     input encoder_B,
     input rotary_encoder_rd_stb,
     output reg enc_state_change,
+    output reg [7:0] rotary_encoder_reg,
+    // for test
     output clkwise,
-    output clicks,
-    output reg [7:0] rotary_encoder_reg
+    output [1:0] enc_test_out    
 );
 
     reg [7:0]   clk_scaler = 0;
     reg [3:0]   enc_reg_A, enc_reg_B;
     reg [1:0]   enc_value;
     reg         clockwise, enc_state_change_stb;
+    
+    // for test
+    assign enc_test_out = enc_value;
+    assign clkwise = clockwise;
 
 //  Encoder sampler and debouncer
     always @ (posedge clk) begin
