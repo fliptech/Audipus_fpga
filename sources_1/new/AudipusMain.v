@@ -152,6 +152,7 @@ parameter num_of_filters = 4;
     assign spi_cs_fpga_n = spi_cs0_n || !(!rPix[23] && !rPix[22]);
     assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
+//    assign spi_cs_lcd_n = spi_cs0_n || !(rPix[23] && rPix[22]);
 
     //audio control register
     

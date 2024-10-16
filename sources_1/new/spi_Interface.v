@@ -37,6 +37,7 @@ module spi_Interface # (
     output              wr_strobe,
     output reg          coef_wr_stb,    // strobed on MSB wr
     output reg          eq_wr_stb,      // strobed on MSB wr
+    output reg          rotary_encoder_rd_stb,
 //  input registers
     input [7:0]         status,         // {interrupt, staus_reg}
     input [7:0]         audio_status,  
@@ -203,6 +204,7 @@ always @ (posedge clk) begin
 
     eq_wr_stb <= (spi_addr == EQ_GAIN_LSB) && wr_strobe;    // SW IMPORTANT: EQ_GAIN_MSB most always be written before EQ_GAIN_LSB
 
+    rotary_encoder_rd_stb <= (spi_addr == ROTARY_ENCODER) && rd_strobe;
 end
 
 
