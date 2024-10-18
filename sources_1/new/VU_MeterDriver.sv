@@ -22,10 +22,10 @@
 
 module VU_MeterDriver(
     input clk,
-    input reset,
+    input audio_clk_enable,
     input audio_enable,
-    input [15:0] l_audio_signal,
-    input [15:0] r_audio_signal,
+    input [7:0] l_audio_signal,     // msb's
+    input [7:0] r_audio_signal,     // msb's
     output reg l_VU_pwm,
     output reg r_VU_pwm
 );
@@ -33,44 +33,52 @@ module VU_MeterDriver(
 parameter NUMBER_OF_AVERAGES = 16;
 
 reg         VU_sample, pwm_ready;
-reg [3:0]   accum_cnt;
-reg [5:0]   VU_pwm_clk_cnt;
+reg [3:0]   accum_cnt = 0;
+reg [5:0]   VU_pwm_clk_cnt = 0;
 reg [23:0]  l_avg_pwm, r_avg_pwm;
-reg [15:0]  l_pwm_duty_cycle, r_pwm_duty_cycle;
+reg [6:0]  l_pwm_duty_cycle, r_pwm_duty_cycle;
 
+
+// generates average interval (VU sample rate) => 96KHz/NUMBER_OF_AVERAGES = 6KHz
 always @ (posedge clk) begin
-
-
-    if (audio_enable) begin
-        if (accum_cnt == (NUMBER_OF_AVERAGES - 1)) begin    // VU sample rate = 96KHz/NUMBER_OF_AVERAGES = 6KHz
-            VU_sample <= 1'b1;
+    if (audio_clk_enable) begin
+        if (accum_cnt == (NUMBER_OF_AVERAGES - 1)) begin     
+            VU_sample <= 1'b1;      // strobe
             accum_cnt <= 0;
         end
-    end        
-
+        else begin
+            VU_sample <= 1'b0;
+            accum_cnt <= accum_cnt + 1;
+        end
+    end    
+    else begin
+        VU_sample <= 1'b0;
+        accum_cnt <= accum_cnt;
+    end           
 end // always
 
+//unsigned accum
 VUmeter_accum left_VU_accum (
     .CLK(clk),              // input wire CLK
-    .CE(audio_enable),      // input wire CE
+    .CE(audio_clk_enable),  // input wire CE
     .BYPASS(VU_sample),     // input wire BYPASS
-    .SCLR(reset),           // input wire SCLR
-    .B(l_audio_signal),     // input wire [15 : 0] B
-    .Q(l_avg_pwm)           // output wire [23 : 0] Q
+    .SCLR(audio_enable),    // input wire SCLR
+    .B({~l_audio_signal[7], l_audio_signal[6:0]}),     // input wire [7 : 0] converted to unsigned
+    .Q(l_avg_pwm)           // output wire [15 : 0] Q
 );
 
+//unsigned accum
 VUmeter_accum right_VU_accum (
     .CLK(CLK),              // input wire CLK
-    .CE(audio_enable),      // input wire CE
+    .CE(audio_clk_enable),  // input wire CE
     .BYPASS(VU_sample),     // input wire BYPASS
-    .SCLR(reset),           // input wire SCLR
-    .B(r_audio_signal),     // input wire [15 : 0] B
-    .Q(r_avg_pwm)           // output wire [23 : 0] Q
+    .SCLR(audio_enable),    // input wire SCLR
+    .B({~r_audio_signal[7], r_audio_signal[6:0]}),     // input wire [7 : 0] converted to unsigned
+    .Q(r_avg_pwm)           // output wire [15 : 0] Q
 );
 
-
+// audio data averager
 always @ (posedge clk) begin
-
     if (VU_sample) begin        // stb @ 6K cycles
         pwm_ready = 1'b1;
     end 
@@ -78,12 +86,14 @@ always @ (posedge clk) begin
         VU_pwm_clk_cnt = 0;
        
         if (pwm_ready) begin
-            l_pwm_duty_cycle <= l_avg_pwm;
-            r_pwm_duty_cycle <= r_avg_pwm;
+            // load duty cycle counter (7bits)
+            l_pwm_duty_cycle <= l_avg_pwm[15:9];
+            r_pwm_duty_cycle <= r_avg_pwm[15:9];
             pwm_ready = 1'b0;
         end
     end 
-    else
+    // samples per duty cycle = 768K / 6K cycles = 128
+    else begin
         // left
         if (l_pwm_duty_cycle > 0) begin
             l_pwm_duty_cycle <= l_pwm_duty_cycle - 1;
