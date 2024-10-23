@@ -83,9 +83,12 @@ always @ (posedge clk) begin
         l_pwm_duty_cycle <= l_avg_pwm[15:9];        // load left duty cycle count
         r_pwm_duty_cycle <= r_avg_pwm[15:9];        // load tight duty cycle count
         VU_pwm_clk_cnt = 0;
-    end 
-    // samples per duty cycle = 768K / 6K cycles = 128
-    else begin
+    end
+    // define duty cycle resolution as 128 increments per cycle
+    // duty cycle clk rate (enable) - 6KHz x 128 = 768KHz
+    // to create 768KHz = 49.152MHz / 64 = VU_pwm_clk_cnt = 0
+    else if (VU_pwm_clk_cnt == 63) begin    
+        VU_pwm_clk_cnt = 0;
         // left
         if (l_pwm_duty_cycle > 0) begin
             l_pwm_duty_cycle <= l_pwm_duty_cycle - 1;
@@ -98,7 +101,7 @@ always @ (posedge clk) begin
         
         // right                    
         if (r_pwm_duty_cycle > 0) begin
-            l_pwm_duty_cycle <= r_pwm_duty_cycle - 1;
+            r_pwm_duty_cycle <= r_pwm_duty_cycle - 1;
             r_VU_pwm <= 1'b1;
         end
         else begin
@@ -106,6 +109,12 @@ always @ (posedge clk) begin
             r_VU_pwm <= 1'b0; 
         end            
      end
+     else begin
+        VU_pwm_clk_cnt <= VU_pwm_clk_cnt;
+        l_pwm_duty_cycle <= l_pwm_duty_cycle;
+        r_pwm_duty_cycle <= r_pwm_duty_cycle;
+     end
+
 end // always
         
 endmodule
