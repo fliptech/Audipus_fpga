@@ -36,7 +36,7 @@ reg         VU_sample;
 reg [3:0]   accum_cnt = 0;
 reg [5:0]   VU_pwm_clk_cnt = 0;
 reg [23:0]  l_avg_pwm, r_avg_pwm;
-reg [6:0]  l_pwm_duty_cycle, r_pwm_duty_cycle;
+reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle;
 
 
 // generates average interval (VU sample rate) => 96KHz/NUMBER_OF_AVERAGES = 6KHz
@@ -86,7 +86,7 @@ always @ (posedge clk) begin
     end
     // define duty cycle resolution as 128 increments per cycle
     // duty cycle clk rate (enable) - 6KHz x 128 = 768KHz
-    // to create 768KHz = 49.152MHz / 64 = VU_pwm_clk_cnt = 0
+    // to create 768KHz = 49.152MHz / 64 = VU_pwm_clk_cnt
     else if (VU_pwm_clk_cnt == 63) begin    
         VU_pwm_clk_cnt = 0;
         // left
@@ -110,7 +110,7 @@ always @ (posedge clk) begin
         end            
      end
      else begin
-        VU_pwm_clk_cnt <= VU_pwm_clk_cnt;
+        VU_pwm_clk_cnt <= VU_pwm_clk_cnt + 1;
         l_pwm_duty_cycle <= l_pwm_duty_cycle;
         r_pwm_duty_cycle <= r_pwm_duty_cycle;
      end

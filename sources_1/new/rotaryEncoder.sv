@@ -32,7 +32,7 @@ module rotaryEncoder # (
     output reg [7:0] rotary_encoder_reg,
     // for test
     output clkwise,
-    output [1:0] enc_test_out    
+    output [3:0] enc_test_out    
 );
 
     reg [7:0]   clk_scaler = 0;
@@ -41,7 +41,9 @@ module rotaryEncoder # (
     reg         clockwise, enc_state_change_stb;
     
     // for test
-    assign enc_test_out = enc_value;
+    assign enc_test_out[1:0] = enc_value;
+    assign enc_test_out[3:2] = encoder_state;
+    
     assign clkwise = clockwise;
 
 //  Encoder sampler and debouncer
