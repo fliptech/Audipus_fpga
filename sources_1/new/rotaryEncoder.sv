@@ -27,23 +27,16 @@ module rotaryEncoder # (
     input reset,
     input encoder_A,
     input encoder_B,
-    input rotary_encoder_rd_stb,
-    output reg enc_state_change,
-    output reg [7:0] rotary_encoder_reg,
-    // for test
-    output clkwise,
-    output [3:0] enc_test_out    
+    output reg          enc_state_change_stb,   // encoder state has changed
+    output reg          clockwise,                // rotation direction
+    output reg [1:0]    enc_value,              // debounced encoder value => [B,A]
+    output [1:0]        encoder_state           // state machine's state (for test)
 );
 
     reg [7:0]   clk_scaler = 0;
     reg [3:0]   enc_reg_A, enc_reg_B;
-    reg [1:0]   enc_value;
-    reg         clockwise, enc_state_change_stb;
     
-    // for test
-    assign enc_test_out[1:0] = enc_value;
-    assign enc_test_out[3:2] = encoder_state;
-    
+     
     assign clkwise = clockwise;
 
 //  Encoder sampler and debouncer
@@ -148,23 +141,5 @@ always @ (posedge clk) begin
     end  // end else
 end   // end always            
 
-// cpu interface
-always @ (posedge clk) begin
-
-    if (enc_state_change_stb)
-        enc_state_change <= 1'b1;
-    else if (rotary_encoder_rd_stb)
-        enc_state_change <= 1'b0;
-    else
-        enc_state_change <= enc_state_change;
-                
-    if (enc_state_change_stb) begin
-        rotary_encoder_reg[1:0] <= enc_value;
-        rotary_encoder_reg[2] <= clockwise;
-        rotary_encoder_reg[7:3] <= 0;
-    end
-    else
-        rotary_encoder_reg <= rotary_encoder_reg;       
-end
                       
 endmodule

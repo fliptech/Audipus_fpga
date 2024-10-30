@@ -194,12 +194,14 @@ parameter num_of_filters = 4;
         .wr_strobe              (spi_wr_stb), 
         .coef_wr_stb            (coef_wr_en),
         .eq_wr_stb              (eq_wr_en),
+        .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
 //  input registers, input [7:0]
         .status                 (status_reg),       // in [6:0]
         .audio_status           (audio_status_reg),
         .interrupt_input        (interrupt_reg),        // interrupt[7] used
         .sram_to_spi_data       (sram_to_spi_data),           
-        .mpio_to_spi_data       (mpio_to_spi_data),           
+        .mpio_to_spi_data       (mpio_to_spi_data),
+        .rotary_encoder_reg     (rotary_encoder_reg),           
 //  output registers, output [7:0]
         // Audio
         .audio_control_reg      (audio_control_reg),
@@ -252,7 +254,7 @@ parameter num_of_filters = 4;
         .i2s_lrclk          (pcm9211_i2s_lrclk),
         .i2s_d              (pcm9211_i2s_d),
         //output i2s
-        .audio_enable       (!dac_rst),
+        .audio_enable       (!dac_rst),     // output
         .dac_bclk           (dac_bclk),
         .dac_data           (dac_data),
         .dac_lrclk          (dac_lrclk),
@@ -293,6 +295,28 @@ parameter num_of_filters = 4;
         .mpio_rd_reg    (mpio_to_spi_data),     // output [7:0]
         .mpio_wr_reg    (spi_to_mpio_data)      // input [7:0]
     );
+    
+    FrontPanel fnt_pnl (
+// Common signals
+    .clk                    (clk),
+    .reset_n                (reset_n),
+    .audio_clk_enable,      (test_dout_valid),      // <<< check
+    .audio_enable           (!dac_rst),
+// Rotary Encoder    
+    .encoder_A              (aux[3]),
+    .encoder_B              (aux[4]),
+    .encoder_sw             (aux[2]),
+    .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
+    .rotary_encoder_reg     (rotary_encoder_reg),
+    .enc_state_change       (enc_state_change),
+//  -VU Meter
+    .l_audio_signal,    // input [7:0]
+    .r_audio_signal,    // input [7:0]
+    .l_VU_pwm,          // output
+    .r_VU_pwm,          // output
+// test
+    .test               // output [15:0]
+);        
         
     StepperMotorDrive step_drive (
         .clk            (clk),
