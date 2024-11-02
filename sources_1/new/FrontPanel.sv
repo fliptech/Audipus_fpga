@@ -44,6 +44,7 @@ module FrontPanel(
  
  wire       clkwise;
  
+ 
 // clockwise            enc_value(BA) = {00, 01, 11, 10}        
 // counter clockwise    enc_value(BA) = {00, 10, 11, 01}  
 assign test[0] = encoder_A;

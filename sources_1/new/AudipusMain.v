@@ -152,7 +152,7 @@ parameter num_of_filters = 4;
     assign spi_cs_fpga_n = spi_cs0_n || !(!rPix[23] && !rPix[22]);
     assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
-//    assign spi_cs_lcd_n = spi_cs0_n || !(rPix[23] && rPix[22]);
+    assign spi_cs_lcd_n = spi_cs0_n || !(rPix[23] && rPix[22]);
 
     //audio control register
     
@@ -295,29 +295,36 @@ parameter num_of_filters = 4;
         .mpio_rd_reg    (mpio_to_spi_data),     // output [7:0]
         .mpio_wr_reg    (spi_to_mpio_data)      // input [7:0]
     );
+
+// Front Panel aux assignments    
+        assign aux[8] = !spi_cs_lcd_n;
+        assign aux[4] = spi_clk;        
+        assign aux[9] = spi_mosi;
+        assign aux[3] = rPix[27];      // spi_cmd_lcd;
+        assign aux[7] = reset_n;
     
     FrontPanel fnt_pnl (
-// Common signals
-    .clk                    (clk),
-    .reset_n                (reset_n),
-    .audio_clk_enable,      (test_dout_valid),      // <<< check
-    .audio_enable           (!dac_rst),
-// Rotary Encoder    
-    .encoder_A              (aux[3]),
-    .encoder_B              (aux[4]),
-    .encoder_sw             (aux[2]),
-    .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
-    .rotary_encoder_reg     (rotary_encoder_reg),
-    .enc_state_change       (enc_state_change),
-//  -VU Meter
-    .l_audio_signal,    // input [7:0]
-    .r_audio_signal,    // input [7:0]
-    .l_VU_pwm,          // output
-    .r_VU_pwm,          // output
-// test
-    .test               // output [15:0]
-);        
-        
+    // Common signals
+        .clk                    (clk),
+        .reset_n                (reset_n),
+        .audio_clk_enable       (test_dout_valid),      // <<< check
+        .audio_enable           (!dac_rst),
+    // Rotary Encoder    
+        .encoder_A              (aux[6]),
+        .encoder_B              (aux[2]),
+        .encoder_sw             (aux[1]),
+        .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
+        .rotary_encoder_reg     (rotary_encoder_reg),
+        .enc_state_change       (enc_state_change),
+    //  -VU Meter
+        .l_audio_signal         (l_audio_signal),    // input [7:0]
+        .r_audio_signal         (r_audio_signal),    // input [7:0]
+        .l_VU_pwm               (aux[5]),          // output
+        .r_VU_pwm               (aux[0]),          // output
+    // test
+        .test                   (fnt_pnl_test)       // output [15:0]
+    );        
+            
     StepperMotorDrive step_drive (
         .clk            (clk),
         .motor_en       (sram_control_reg[0]),              // input
