@@ -34,8 +34,8 @@ module FrontPanel(
     output reg [7:0] rotary_encoder_reg,
     output reg enc_state_change,
  //  -VU Meter
-    input [7:0] l_audio_signal,
-    input [7:0] r_audio_signal,
+    input [7:0] l_audio_signal,     // from AudioMux
+    input [7:0] r_audio_signal,     // from AudioMux
     output l_VU_pwm,
     output r_VU_pwm,
 // test
@@ -61,19 +61,26 @@ assign test[5] =  r_VU_pwm;
 
 assign test[7] =  audio_clk_enable;
 
+
+
 // clockwise            enc_value(BA) = {00, 01, 11, 10}        
 // counter clockwise    enc_value(BA) = {00, 10, 11, 01}  
     
- rotaryEncoder rot_enc (   
+ rotaryEncoder rot_enc ( 
+    // inputs  
     .clk                    (clk),
     .reset                  (reset),
     .encoder_A              (encoder_A),
     .encoder_B              (encoder_B),
+    .encoder_sw             (encoder_sw),
+    // outputs
     .enc_state_change_stb   (enc_state_change_stb),     // strobe when enc value state changes
-    .enc_value              (enc_value),                // debounced encoder value output[1:0] 
-    // for test
     .clockwise              (clkwise),
-    .encoder_state          (encoder_state)             // output[1:0] (for test)   
+    .click                  (click),                    // enc_value of one in sync with enc_state_change_stb
+    .switch                 (switch),                   // switch value in sync with enc_state_change_stb
+    // below for test
+    .enc_sw_value           (enc_sw_value),             // debounced switch value output
+    .enc_value              (enc_value)                 // debounced encoder value output[1:0] 
  );
  
 
@@ -90,20 +97,23 @@ VU_MeterDriver VU_mtr (
 // rotary cpu interface
 always @ (posedge clk) begin
 
-    if (enc_state_change_stb)
-        enc_state_change <= 1'b1;
-    else if (rotary_encoder_rd_stb)
-        enc_state_change <= 1'b0;
+    rotary_encoder_reg[7:4] <= 0;       // spare bits set to zero
+
+    if (enc_state_change_stb)           // enc state change occurs
+        rotary_encoder_reg[3] <= 1'b1;
+    else if (rotary_encoder_rd_stb)     // clear after being read by the cpu <<<< CHECK THIS
+        rotary_encoder_reg[3] <= 1'b0;
     else
         enc_state_change <= enc_state_change;
                 
     if (enc_state_change_stb) begin
-        rotary_encoder_reg[1:0] <= enc_value;
-        rotary_encoder_reg[2] <= clkwise;
-        rotary_encoder_reg[7:3] <= 0;
+        rotary_encoder_reg[0] <= click;
+        rotary_encoder_reg[1] <= clkwise;
+        rotary_encoder_reg[2] <= switch;
     end
-    else
-        rotary_encoder_reg <= rotary_encoder_reg;       
+    else begin
+        rotary_encoder_reg[2:0] <= rotary_encoder_reg[2:0];
+    end      
 end
     
 endmodule
