@@ -45,7 +45,7 @@ module rotaryEncoder # (
 
 //  Encoder sampler and debouncer
     always @ (posedge clk) begin
-        if (clk_scaler == CLK_SCALER_VALUE) begin   // creates encoder sample strobe @ main_clk/CLK_SCALER_VALUE (@ 3KHz)
+        if (clk_scaler == CLK_SCALER_VALUE) begin   // creates encoder sample strobe @ main_clk/CLK_SCALER_VALUE (3KHz)
             clk_scaler <= 0;
             enc_reg_A[0] <= encoder_A;
             enc_reg_B[0] <= encoder_B;
@@ -91,23 +91,25 @@ module rotaryEncoder # (
 
 typedef enum reg [1:0] {zero, between_01, one, between_10} EncoderState;
 
-EncoderState    encoder_state, encoder_state_dly;
+EncoderState    encoder_state;
+reg[1:0]        enc_value_dly;
 reg             state_change_stb;
 reg             enc_sw_value_dly;
 
-assign click = enc_state_change_stb && (encoder_state == one);  
-assign switch = enc_state_change_stb && enc_sw_value; 
+//cpu bits assignments
+assign click = (encoder_state == one);  
+assign switch = enc_sw_value; 
 
 // Encoder State Machine      
 always @ (posedge clk) begin
 
-    encoder_state_dly <= encoder_state;
+    enc_value_dly <= enc_value;
     enc_sw_value_dly <= enc_sw_value;
     
-    if (    (encoder_state_dly != encoder_state)
-        ||  (enc_sw_value_dly != enc_sw_value)) begin          
+    if (enc_value_dly != enc_value) begin
+                
         enc_state_change_stb <= 1'b1;         // strobe when a change in encoder states   
-                          
+
         case (encoder_state) 
             zero: begin
                 if (enc_value == 'b01) begin
@@ -153,13 +155,21 @@ always @ (posedge clk) begin
                 clockwise <= clockwise;
                 encoder_state <= encoder_state;
             end                
-        endcase; 
-    end  // end if
-    else begin  
-        enc_state_change_stb <= 1'b0; 
+        endcase;
+    end // if
+    
+    else if (enc_sw_value_dly != enc_sw_value) begin
+        enc_state_change_stb <= 1'b1;
         clockwise <= clockwise;
         encoder_state <= encoder_state;
-    end  // end else
+    end // else if
+    
+    else begin
+        enc_state_change_stb <= 1'b0;       // clear strobe
+        clockwise <= clockwise;
+        encoder_state <= encoder_state;
+    end  // else                  
+
 end   // end always            
 
                       
