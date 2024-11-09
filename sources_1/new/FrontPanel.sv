@@ -95,11 +95,18 @@ VU_MeterDriver VU_mtr (
 );
  
 // rotary cpu interface
+//      rotary_encoder_reg[0] = click
+//      rotary_encoder_reg[1] = clkwise
+//      rotary_encoder_reg[2] = switch
+//      rotary_encoder_reg[3] = state change
+//      rotary_encoder_reg[4] = overflow
+//      rotary_encoder_reg[7:5] = 0
+
 always @ (posedge clk) begin
 
     rotary_encoder_reg[7:5] <= 0;       // spare bits set to zero
 
-    if (enc_state_change_stb)  begin             // enc state change occurs
+    if (enc_state_change_stb)  begin        // enc state change occurs
         rotary_encoder_reg[3] <= 1'b1;      // state change bit enabled
         if (rotary_encoder_reg[3] == 1'b1)  // if state change when overflow bit is still set
             rotary_encoder_reg[4] <= 1'b1;  // overflow bit enabled
