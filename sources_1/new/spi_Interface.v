@@ -69,7 +69,7 @@ module spi_Interface # (
     output reg [7:0]    mpio_control_reg,
     output reg [7:0]    spi_to_mpio_reg,
 //  aux
-    output reg [7:0]    aux_reg,
+//    output reg [7:0]    aux_reg,
 //  for test
     output reg [7:0]    test_reg,
     output reg [7:0]    fe_test_reg,
@@ -99,7 +99,7 @@ wire [6:0] status_reg = 0;
 	parameter COEF_SEL         = 7'h03;    // Coefficient filter to be accessed, max. number = NUM_FIR_TAPS
 	parameter FIR_COEF_LSB     = 7'h04;    // FIR coeficient wr lsb based on the COEF_SEL  
 	parameter FIR_COEF_MSB     = 7'h05;    // FIR coeficient wr msb based on the COEF_SEL  
-	parameter AUX              = 7'h06;    // aux Reg
+//	parameter AUX              = 7'h06;    // aux Reg
 	parameter SRAM_CONTROL     = 7'h07;    // page for sram
 	parameter SRAM_ADDR        = 7'h08;    // selects sram start address for auto-increment
 	parameter SPI_TO_SRAM      = 7'h09;    // write, sram->spi, for a given page, addr is auto-incremented
@@ -159,7 +159,7 @@ always @ (posedge clk) begin
 			else if (spi_addr == SPI_TO_SRAM)    spi_to_sram_reg             <= spi_write_data;
 			else if (spi_addr == MPIO_CONTROL)   mpio_control_reg            <= spi_write_data;
 			else if (spi_addr == SPI_TO_MPIO)    spi_to_mpio_reg             <= spi_write_data;
-			else if (spi_addr == AUX)            aux_reg                     <= spi_write_data;
+//			else if (spi_addr == AUX)            aux_reg                     <= spi_write_data;
 			else if (spi_addr == TEST)           test_reg                    <= spi_write_data;
 			else if (spi_addr == FE_TEST)        fe_test_reg                 <= spi_write_data;
 			else if (spi_addr == TRIANGLE_INC)   triangle_inc_reg            <= spi_write_data;
@@ -181,7 +181,7 @@ always @ (posedge clk) begin
             (spi_addr == SRAM_TO_SPI)    ?   sram_to_spi_data :
             (spi_addr == MPIO_CONTROL)   ?   mpio_control_reg :
             (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
-            (spi_addr == AUX)            ?   aux_reg :
+//            (spi_addr == AUX)            ?   aux_reg :
             (spi_addr == TEST)           ?   test_reg :
             (spi_addr == STATUS)         ?   status_reg :
             (spi_addr == INTERRUPT)      ?   interrupt_reg :

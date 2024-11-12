@@ -58,6 +58,11 @@ module AudioProcessing #(
     
     output [7:0] audio_status,      // cpu reg
     output [7:0] i2sToPcm_bit_cnt,  // cpu_reg
+    
+    // VU Meters
+    output       l_VU_pwm,           // VU Meter pwm signal
+    output       r_VU_pwm,           // VU Meter pwm signal
+    
     // for test
     output          test_dout_valid,
     output [15:0]   test_data_out
@@ -309,6 +314,17 @@ PCM_to_I2S_Converter pcm_to_i2s(
     .i2s_valid      (dac_valid)         // output
 );
 
+
+VU_MeterDriver VU_mtr (
+    .clk                    (clk),
+    .l_data_en              (l_mux_valid),          // input
+    .r_data_en              (r_mux_valid),          // input
+    .audio_enable           (audio_enable),         // '1' if music playing
+    .l_audio_signal         (l_mux_out[23:16]),     // in[7:0]
+    .r_audio_signal         (r_mux_out[23:16]),     // in[7:0]
+    .l_VU_pwm               (l_VU_pwm),             // out
+    .r_VU_pwm               (r_VU_pwm)              // out
+);
  
 
 //  TEST

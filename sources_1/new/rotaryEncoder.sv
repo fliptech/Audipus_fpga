@@ -114,7 +114,7 @@ always @ (posedge clk) begin
             zero: begin
                 if (enc_value == 'b01) begin
                     clockwise <= 1'b1;
-                    encoder_state <= enc.between_01;
+                    encoder_state <= between_01;
                 end             
                 else if (enc_value == 'b10) begin
                     clockwise <= 1'b0;

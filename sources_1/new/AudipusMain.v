@@ -95,10 +95,9 @@ parameter num_of_filters = 4;
 // sram connections 
     wire [7:0] sram_to_spi_data, spi_to_sram_reg;   
     wire [7:0] sram_control;
-// aux connections   
-    wire [7:0] aux_reg, test_reg; 
-    assign aux = {2'b00, aux_reg};   
-// mpio connections    
+// test connections   
+    wire [7:0] test_reg; 
+ // mpio connections    
     wire [7:0] mpio_control_reg;
     wire [7:0] mpio_to_spi_data, spi_to_mpio_reg;
     
@@ -130,6 +129,8 @@ parameter num_of_filters = 4;
     
     wire        spi_rd_stb, spi_wr_stb;
     
+    wire        l_VU_pwm, r_VU_pwm;
+    
     //test
 //    wire [4:0]       spi_bit_count;
 //    wire [2:0]       spi_shift_clk;
@@ -141,6 +142,8 @@ parameter num_of_filters = 4;
     wire [6:0]      spi_addr;
     
     wire [7:0]      sram_start_addr;
+    
+    
     
 
 // ASSIGNMENTS
@@ -160,7 +163,6 @@ parameter num_of_filters = 4;
     
     assign spdif_out = 1'b0;        // temp << check
 
-         
      // for test
     wire        test_dout_valid;
     wire [7:0]  test_wave; 
@@ -221,8 +223,6 @@ parameter num_of_filters = 4;
         // mpio
         .mpio_control_reg       (mpio_control_reg),
         .spi_to_mpio_reg        (spi_to_mpio_reg),
-        // aux
-        .aux_reg                (aux_reg),
         // test
         .test_reg               (test_reg),
         .fe_test_reg            (fe_test_reg),
@@ -279,6 +279,9 @@ parameter num_of_filters = 4;
         .audio_status       (audio_status_reg),
         .test_reg           (test_reg),
         .i2sToPcm_bit_cnt   (i2sToPcm_bit_reg),
+        // VU Meters
+        .l_VU_pwm           (aux[5]),           // output, VU Meter pwm signal
+        .r_VU_pwm           (aux[0]),           // output, VU Meter pwm signal
         // test
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out),
@@ -296,34 +299,31 @@ parameter num_of_filters = 4;
         .mpio_wr_reg    (spi_to_mpio_data)      // input [7:0]
     );
 
-// Front Panel aux assignments    
-        assign aux[8] = !spi_cs_lcd_n;
-        assign aux[4] = spi_clk;        
-        assign aux[9] = spi_mosi;
-        assign aux[3] = rPix[27];      // spi_cmd_lcd;
-        assign aux[7] = reset_n;
+// Front Panel aux spi assignments    
+    assign aux[8] = !spi_cs_lcd_n;  // output
+    assign aux[4] = spi_clk;        // output        
+    assign aux[9] = spi_mosi;       // input
+    assign aux[3] = rPix[27];       // output, spi_cmd_lcd;
+    assign aux[7] = reset_n;        // output
+    /* AudioProcessing aux VU assignments (for reference only, see AudioProcessing module) 
+           aux[5] = l_VU_pwm        // output, VU Meter pwm signal
+           aux[0] = r_VU_pwm        // output, VU Meter pwm signal
+    */
     
     FrontPanel fnt_pnl (
     // Common signals
         .clk                    (clk),
-        .reset_n                (reset_n),
-        .audio_clk_enable       (test_dout_valid),      // <<< check
-        .audio_enable           (!dac_rst),
+        .spi_reset_n            (reset_n),          // change later for separate spi rst control
     // Rotary Encoder    
-        .encoder_A              (aux[6]),
-        .encoder_B              (aux[2]),
-        .encoder_sw             (aux[1]),
+        .encoder_A              (aux[6]),           // input
+        .encoder_B              (aux[2]),           // input
+        .encoder_sw             (aux[1]),           // input
         .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
         .rotary_encoder_reg     (rotary_encoder_reg),
-        .enc_state_change       (enc_state_change),
-    //  -VU Meter
-        .l_audio_signal         (l_audio_signal),    // input [7:0]
-        .r_audio_signal         (r_audio_signal),    // input [7:0]
-        .l_VU_pwm               (aux[5]),          // output
-        .r_VU_pwm               (aux[0]),          // output
     // test
-        .test                   (fnt_pnl_test)       // output [15:0]
+        .test                   (fnt_pnl_test)      // output [15:0]
     );        
+
             
     StepperMotorDrive step_drive (
         .clk            (clk),
