@@ -27,17 +27,22 @@ module VU_MeterDriver(
     input audio_enable,             // '1' if music playing
     input [7:0] l_audio_signal,     // msb's
     input [7:0] r_audio_signal,     // msb's
-    output reg l_VU_pwm,
-    output reg r_VU_pwm
+    input [7:0] vu_test_reg,        // for test only
+    output l_VU_out,
+    output r_VU_out
 );
 
 parameter NUMBER_OF_AVERAGES = 16;
 
-reg         l_VU_sample, r_VU_sample;;
+wire l_VU_out = vu_test_reg[0] ? test_VU_pwm : l_VU_pwm;
+wire r_VU_out = vu_test_reg[0] ? test_VU_pwm : r_VU_pwm;
+
+reg         l_VU_sample, r_VU_sample;
+reg         l_VU_pwm, r_VU_pwm, test_VU_pwm;
 reg [3:0]   l_accum_cnt = 0, r_accum_cnt = 0;
-reg [5:0]   l_VU_pwm_clk_cnt = 0, r_VU_pwm_clk_cnt = 0;
+reg [5:0]   l_VU_pwm_clk_cnt = 0, r_VU_pwm_clk_cnt = 0, test_VU_pwm_clk_cnt = 0;
 reg [23:0]  l_avg_pwm, r_avg_pwm;
-reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle;
+reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle, test_pwm_duty_cycle;
 
 
 // generates average interval (VU sample rate) => 96KHz/NUMBER_OF_AVERAGES = 6KHz
@@ -155,5 +160,27 @@ end // always
      end
 
 end // always
+
+ always @ (posedge clk) begin
+    if (vu_test_reg[0]) begin
+        if (test_VU_pwm_clk_cnt == 63) begin 
+            test_VU_pwm_clk_cnt <= 0;
+            test_pwm_duty_cycle <= vu_test_reg[7:1];
+        end
+        else if (test_pwm_duty_cycle > 0) begin
+            test_pwm_duty_cycle <= test_pwm_duty_cycle - 1;
+            test_VU_pwm <= 1'b1;
+        end
+        else begin
+            test_pwm_duty_cycle <= 0;
+            test_VU_pwm <= 1'b0; 
+        end
+    end
+    else begin
+        test_VU_pwm_clk_cnt <= 0; 
+        test_pwm_duty_cycle <= 0;
+        test_VU_pwm <= 1'b0; 
+    end
+end // always 
         
 endmodule

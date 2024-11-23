@@ -73,6 +73,7 @@ module spi_Interface # (
 //  for test
     output reg [7:0]    test_reg,
     output reg [7:0]    fe_test_reg,
+    output reg [7:0]    vu_test_reg,
     output reg [7:0]    triangle_inc_reg,
     output              shift_in_clken,
     output              shift_out_clken,
@@ -119,6 +120,7 @@ wire [6:0] status_reg = 0;
     parameter EQ_SCALER_LSB    = 7'h17;    // number of left shifts of the Eq data out for scaling
     parameter EQ_SCALER_MSB    = 7'h18;    // number of left shifts of the Eq data out for scaling
     parameter ROTARY_ENCODER   = 7'h19;    // number of rotary encoder clicks 
+	parameter VU_TEST          = 7'h1a;    // front end test Reg
 
 
 
@@ -165,6 +167,7 @@ always @ (posedge clk) begin
 			else if (spi_addr == TRIANGLE_INC)   triangle_inc_reg            <= spi_write_data;
 			else if (spi_addr == EQ_SCALER_LSB)  eq_scaler_lsb_reg           <= spi_write_data;
 			else if (spi_addr == EQ_SCALER_MSB)  eq_scaler_msb_reg           <= spi_write_data;
+			else if (spi_addr == VU_TEST)        vu_test_reg                 <= spi_write_data;
     end
 end
 
@@ -192,6 +195,7 @@ always @ (posedge clk) begin
             (spi_addr == EQ_SCALER_LSB)  ?   eq_scaler_lsb_reg :
             (spi_addr == EQ_SCALER_MSB)  ?   eq_scaler_msb_reg :
             (spi_addr == ROTARY_ENCODER) ?   rotary_encoder_reg :
+            (spi_addr == VU_TEST)        ?   vu_test_reg :
             
             8'h99;
     end

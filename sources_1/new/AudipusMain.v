@@ -125,7 +125,7 @@ parameter num_of_filters = 4;
     wire [7:0]  sram_control_reg, i2sToPcm_bit_reg; 
     wire [15:0] test_data_out;
     
-    wire [7:0]  fe_test_reg, triangle_inc_reg;
+    wire [7:0]  fe_test_reg, vu_test_reg, triangle_inc_reg;
     
     wire        spi_rd_stb, spi_wr_stb;
     
@@ -226,6 +226,7 @@ parameter num_of_filters = 4;
         // test
         .test_reg               (test_reg),
         .fe_test_reg            (fe_test_reg),
+        .vu_test_reg            (vu_test_reg),
         .triangle_inc_reg       (triangle_inc_reg),
         .i2sToPcm_bit_reg       (i2sToPcm_bit_reg),
         .shift_in_clken         (shift_in_clken),       
@@ -286,6 +287,7 @@ parameter num_of_filters = 4;
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out),
         .fe_test_reg        (fe_test_reg),
+        .vu_test_reg        (vu_test_reg),
         .triangle_inc_reg   (triangle_inc_reg)
     );
 

@@ -54,6 +54,7 @@ module AudioProcessing #(
     input [7:0] eq_scaler_msb_reg,  // cpu reg
     input [7:0] test_reg,           // cpu reg
     input [7:0] fe_test_reg,        // cpu reg
+    input [7:0] vu_test_reg,        // cpu reg
     input [7:0] triangle_inc_reg,   // cpu reg
     
     output [7:0] audio_status,      // cpu reg
@@ -322,8 +323,9 @@ VU_MeterDriver VU_mtr (
     .audio_enable           (audio_enable),         // '1' if music playing
     .l_audio_signal         (l_mux_out[23:16]),     // in[7:0]
     .r_audio_signal         (r_mux_out[23:16]),     // in[7:0]
-    .l_VU_pwm               (l_VU_pwm),             // out
-    .r_VU_pwm               (r_VU_pwm)              // out
+    .vu_test                (vu_test_reg),          // in[7:0]
+    .l_VU_out               (l_VU_pwm),             // out
+    .r_VU_out               (r_VU_pwm)              // out
 );
  
 
