@@ -63,13 +63,25 @@ parameter num_of_equalizers = 8;
         input   rPi20,
         input   [27:22] rPix,
         
-        
+// Front Panel aux spi assignments    
+        output aux_spi_cs_lcd,      // aux[8]
+        output aux_spi_clk,         // aux[4]        
+        output aux_spi_mosi,        // aux[9]
+        output aux_spi_cmd_lcd,     // aux[3], spi_cmd_lcd;
+        output aux_reset_n,         // aux[7]
+    // AudioProcessing aux VU assignments (for reference only, see AudioProcessing module) 
+        output aux_l_vu,            // aux[5], VU Meter pwm signal
+        output aux_r_vu,            // aux[0], VU Meter pwm signal
+    // Front Panel aux Rotary Encoder  assignments  
+        input aux_encoder_sw,       // aux[1]
+        input aux_encoder_A,        // aux[6]
+        input aux_encoder_B,        // aux[2]
+                
         output reg [16:0]   test,
         output              test_clk,
-        inout [9:0]     aux,
-        output [3:0]    step_drv,
-        output [3:0]    led,
-        output          spdif_out
+        output [3:0]        step_drv,
+        output [3:0]        led,
+        output              spdif_out
     );
     
 parameter num_of_filters = 4;
@@ -281,8 +293,8 @@ parameter num_of_filters = 4;
         .test_reg           (test_reg),
         .i2sToPcm_bit_cnt   (i2sToPcm_bit_reg),
         // VU Meters
-        .l_VU_pwm           (aux[5]),           // output, VU Meter pwm signal
-        .r_VU_pwm           (aux[0]),           // output, VU Meter pwm signal
+        .l_VU_pwm           (l_VU_pwm),           // aux[5], output, VU Meter pwm signal
+        .r_VU_pwm           (r_VU_pwm),           // aux[0], output, VU Meter pwm signal
         // test
         .test_dout_valid    (test_dout_valid),
         .test_data_out      (test_data_out),
@@ -300,26 +312,32 @@ parameter num_of_filters = 4;
         .mpio_rd_reg    (mpio_to_spi_data),     // output [7:0]
         .mpio_wr_reg    (spi_to_mpio_data)      // input [7:0]
     );
+    
+    wire encoder_sw, encoder_A, encoder_B;    
 
 // Front Panel aux spi assignments    
-    assign aux[8] = !spi_cs_lcd_n;  // output
-    assign aux[4] = spi_clk;        // output        
-    assign aux[9] = spi_mosi;       // input
-    assign aux[3] = rPix[27];       // output, spi_cmd_lcd;
-    assign aux[7] = reset_n;        // output
-    /* AudioProcessing aux VU assignments (for reference only, see AudioProcessing module) 
-           aux[5] = l_VU_pwm        // output, VU Meter pwm signal
-           aux[0] = r_VU_pwm        // output, VU Meter pwm signal
-    */
+    assign aux_spi_cs_lcd =     !spi_cs_lcd_n;  // aux[8], output
+    assign aux_spi_clk =        spi_clk;        // aux[4], output        
+    assign aux_spi_mosi =       spi_mosi;       // aux[9], output
+    assign aux_spi_cmd_lcd =    rPix[27];       // aux[3], output, spi_cmd_lcd;
+    assign aux_reset_n =        reset_n;        // aux[7], output
+    // AudioProcessing aux VU assignments (for reference only, see AudioProcessing module) 
+    assign aux_l_vu =           l_VU_pwm;       // aux[5], output, VU Meter pwm signal
+    assign aux_r_vu =           r_VU_pwm;       // aux[0], output, VU Meter pwm signal
+    // Front Panel aux Rotary Encoder  assignments  
+    assign aux_encoder_sw =     encoder_sw;     // aux[1], input
+    assign aux_encoder_A =      encoder_A;      // aux[6], input
+    assign aux_encoder_B =      encoder_B;      // aux[2], input
+//
     
     FrontPanel fnt_pnl (
     // Common signals
         .clk                    (clk),
         .spi_reset_n            (reset_n),          // change later for separate spi rst control
     // Rotary Encoder    
-        .encoder_A              (aux[6]),           // input
-        .encoder_B              (aux[2]),           // input
-        .encoder_sw             (aux[1]),           // input
+        .encoder_A              (encoder_A),           // input, aux[6]
+        .encoder_B              (encoder_B),           // input, aux[2]
+        .encoder_sw             (encoder_sw),          // input, aux[1]
         .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
         .rotary_encoder_reg     (rotary_encoder_reg),
     // test

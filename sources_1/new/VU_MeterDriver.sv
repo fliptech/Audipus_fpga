@@ -42,7 +42,7 @@ reg         l_VU_pwm, r_VU_pwm, test_VU_pwm;
 reg [3:0]   l_accum_cnt = 0, r_accum_cnt = 0;
 reg [5:0]   l_VU_pwm_clk_cnt = 0, r_VU_pwm_clk_cnt = 0, test_VU_pwm_clk_cnt = 0;
 reg [23:0]  l_avg_pwm, r_avg_pwm;
-reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle, test_pwm_duty_cycle;
+reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle, test_pwm_duty_cycle, test_VU_sample_cnt;
 
 
 // generates average interval (VU sample rate) => 96KHz/NUMBER_OF_AVERAGES = 6KHz
@@ -161,26 +161,41 @@ end // always
 
 end // always
 
+// below for VU meter test only
  always @ (posedge clk) begin
-    if (vu_test_reg[0]) begin
-        if (test_VU_pwm_clk_cnt == 63) begin 
+    if (vu_test_reg[0]) begin                       // if VU test enabled
+        if (test_VU_pwm_clk_cnt == 63) begin        // VU bit sample interval
             test_VU_pwm_clk_cnt <= 0;
-            test_pwm_duty_cycle <= vu_test_reg[7:1];
-        end
-        else if (test_pwm_duty_cycle > 0) begin
-            test_pwm_duty_cycle <= test_pwm_duty_cycle - 1;
-            test_VU_pwm <= 1'b1;
-        end
-        else begin
-            test_pwm_duty_cycle <= 0;
-            test_VU_pwm <= 1'b0; 
+            
+            if (test_VU_sample_cnt == 127) begin    // VU word sample interval (if new word)
+                test_VU_sample_cnt <= 0;
+                test_pwm_duty_cycle <= vu_test_reg[7:1];
+                test_VU_pwm <= 1'b0;
+            end    
+            else if (test_pwm_duty_cycle > 0) begin
+                    test_pwm_duty_cycle <= test_pwm_duty_cycle - 1;
+                    test_VU_sample_cnt <= test_VU_sample_cnt + 1;
+                    test_VU_pwm <= 1'b1;
+            end
+            else begin
+                    test_pwm_duty_cycle <= 0;
+                    test_VU_sample_cnt <= test_VU_sample_cnt + 1;
+                    test_VU_pwm <= 1'b0;
+            end
+        end        
+        else begin 
+            test_VU_pwm_clk_cnt <= test_VU_pwm_clk_cnt + 1;
+            test_pwm_duty_cycle <= test_pwm_duty_cycle;
+            test_VU_sample_cnt <= test_VU_sample_cnt;
+            test_VU_pwm <= test_VU_pwm; 
         end
     end
-    else begin
-        test_VU_pwm_clk_cnt <= 0; 
-        test_pwm_duty_cycle <= 0;
-        test_VU_pwm <= 1'b0; 
-    end
+    else begin// VU test not enabled
+        test_VU_sample_cnt <= 0; 
+        test_pwm_duty_cycle <= vu_test_reg[7:1];
+        test_VU_pwm_clk_cnt <= 0;
+        test_VU_pwm <= 0; 
+    end    
 end // always 
         
 endmodule
