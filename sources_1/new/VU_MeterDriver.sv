@@ -34,15 +34,16 @@ module VU_MeterDriver(
 
 parameter NUMBER_OF_AVERAGES = 16;
 
-wire l_VU_out = vu_test_reg[0] ? test_VU_pwm : l_VU_pwm;
-wire r_VU_out = vu_test_reg[0] ? test_VU_pwm : r_VU_pwm;
+assign l_VU_out = vu_test_reg[0] ? test_VU_pwm : l_VU_pwm;
+assign r_VU_out = vu_test_reg[0] ? test_VU_pwm : r_VU_pwm;
 
 reg         l_VU_sample, r_VU_sample;
 reg         l_VU_pwm, r_VU_pwm, test_VU_pwm;
-reg [3:0]   l_accum_cnt = 0, r_accum_cnt = 0;
-reg [5:0]   l_VU_pwm_clk_cnt = 0, r_VU_pwm_clk_cnt = 0, test_VU_pwm_clk_cnt = 0;
+reg [3:0]   l_accum_cnt, r_accum_cnt;
+reg [5:0]   l_VU_pwm_clk_cnt, r_VU_pwm_clk_cnt, test_VU_pwm_clk_cnt;
 reg [23:0]  l_avg_pwm, r_avg_pwm;
 reg [6:0]   l_pwm_duty_cycle, r_pwm_duty_cycle, test_pwm_duty_cycle, test_VU_sample_cnt;
+//reg [6:0]   test_cnt;
 
 
 // generates average interval (VU sample rate) => 96KHz/NUMBER_OF_AVERAGES = 6KHz
@@ -161,6 +162,8 @@ end // always
 
 end // always
 
+
+//    TEST    \\
 // below for VU meter test only
  always @ (posedge clk) begin
     if (vu_test_reg[0]) begin                       // if VU test enabled
