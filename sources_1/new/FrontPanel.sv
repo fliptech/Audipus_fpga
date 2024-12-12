@@ -45,7 +45,10 @@ assign test[0] = encoder_A;
 assign test[1] = encoder_B;
 assign test[3:2] = enc_value;   // sampled, debounced encoder value => [B,A]
 assign test[4] = clkwise;       // rotation direction
-assign test[5] = enc_sw_value;   
+assign test[5] = enc_sw_value;
+assign test[6] =  enc_state_change_stb; 
+assign test[7] =  rotary_encoder_rd_stb;
+assign test[12:8] = rotary_encoder_reg[4:0];
 
 
 // clockwise            enc_value(BA) = {00, 01, 11, 10}        
@@ -64,6 +67,7 @@ assign test[5] = enc_sw_value;
     .click                  (click),                    // enc_value of one in sync with enc_state_change_stb
     .switch                 (switch),                   // switch value in sync with enc_state_change_stb
     // below for test
+    .test_cnt               (scaler_cnt),
     .enc_sw_value           (enc_sw_value),             // debounced switch value output
     .enc_value              (enc_value)                 // debounced encoder value output[1:0] 
  );

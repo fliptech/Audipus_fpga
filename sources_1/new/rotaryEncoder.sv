@@ -32,16 +32,18 @@ module rotaryEncoder # (
     output reg          clockwise,              // rotation direction
     output              click,                  // state machine's state all 1's (a click)
     output              switch,                 // switched pressed
-    // below for test 
+    // below for test
+    output [1:0]        test_cnt,
     output reg          enc_sw_value,           // debounced switch value
     output reg [1:0]    enc_value               // debounced encoder value => [B,A]
 );
 
-    reg [7:0]   clk_scaler = 0;
+    reg [15:0]   clk_scaler;
     reg [3:0]   enc_reg_A, enc_reg_B, enc_reg_sw;
     
      
     assign clkwise = clockwise;
+    assign test_cnt = clk_scaler[1:0];
 
 //  Encoder sampler and debouncer
     always @ (posedge clk) begin
@@ -72,10 +74,6 @@ module rotaryEncoder # (
             if (enc_reg_sw == 4'hf) begin // sw is 0xf
                 enc_sw_value <= 1'b1;
             end
-            else begin
-                enc_value <= enc_value;
-                enc_sw_value <= enc_sw_value;
-            end                                    
         end     
         else begin   
             clk_scaler <= clk_scaler + 1;

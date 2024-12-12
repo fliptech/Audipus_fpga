@@ -89,7 +89,7 @@ end // always
 VUmeter_accum left_VU_accum (
     .CLK(clk),              // input wire CLK
     .CE(l_data_en),  // input wire CE
-    .BYPASS(VU_sample),     // input wire BYPASS
+    .BYPASS(VU_sample),     // input wire BYPASS, 6KHz interval
     .SCLR(!audio_enable),   // input wire SCLR
     .B({~l_audio_signal[7], l_audio_signal[6:0]}),     // input wire [7 : 0] converted to unsigned
     .Q(l_avg_pwm)           // output wire [15 : 0] Q
@@ -99,7 +99,7 @@ VUmeter_accum left_VU_accum (
 VUmeter_accum right_VU_accum (
     .CLK(clk),              // input wire CLK
     .CE(r_data_en),  // input wire CE
-    .BYPASS(VU_sample),     // input wire BYPASS
+    .BYPASS(VU_sample),     // input wire BYPASS, 6KHz interval
     .SCLR(!audio_enable),   // input wire SCLR
     .B({~r_audio_signal[7], r_audio_signal[6:0]}),     // input wire [7 : 0] converted to unsigned
     .Q(r_avg_pwm)           // output wire [15 : 0] Q
@@ -108,7 +108,7 @@ VUmeter_accum right_VU_accum (
 // LEFT audio data pwm generator
 always @ (posedge clk) begin
     if (l_VU_sample && l_data_en) begin        // stb @ 6K cycles
-        l_pwm_duty_cycle <= l_avg_pwm[15:9];        // load left duty cycle count
+        l_pwm_duty_cycle <= ~l_avg_pwm[15:9];        // load left duty cycle count inverted
         l_VU_pwm_clk_cnt <= 0;
     end
     // define duty cycle resolution as 128 increments per cycle
@@ -137,7 +137,7 @@ end // always
 // RIGHT audio data pwm generator
  always @ (posedge clk) begin
     if (r_VU_sample && r_data_en) begin        // stb @ 6K cycles
-       r_pwm_duty_cycle <= r_avg_pwm[15:9];        // load tight duty cycle count
+       r_pwm_duty_cycle <= ~r_avg_pwm[15:9];        // load tight duty cycle count inverted
        r_VU_pwm_clk_cnt <= 0;
     end
     // define duty cycle resolution as 128 increments per cycle

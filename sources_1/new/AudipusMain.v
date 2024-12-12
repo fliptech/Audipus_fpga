@@ -135,7 +135,7 @@ parameter num_of_filters = 4;
  
     
     wire [7:0]  sram_control_reg, i2sToPcm_bit_reg; 
-    wire [15:0] test_data_out;
+    wire [15:0] test_data_out, fnt_pnl_test;
     
     wire [7:0]  fe_test_reg, vu_test_reg, triangle_inc_reg;
     
@@ -370,12 +370,14 @@ parameter num_of_filters = 4;
 // I2S Test
 //    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
   
-    assign test[2:0] = {pcm9211_i2s_d, pcm9211_i2s_lrclk, pcm9211_i2s_bclk};
-    assign test[3] = pcm9211_mpio0;
+//    assign test[2:0] = {pcm9211_i2s_d, pcm9211_i2s_lrclk, pcm9211_i2s_bclk};
+//    assign test[3] = pcm9211_mpio0;
 //    assign test[3] = test_dout_valid;
-    assign test [15:4] = test_data_out[15:4];
+//    assign test [15:4] = test_data_out[15:4];
        
+// Front Panel Encoder Test
 
+    assign test[15:0] = fnt_pnl_test;
 /*
 always @ (posedge clk) begin
            
