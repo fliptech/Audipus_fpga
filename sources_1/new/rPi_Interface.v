@@ -32,6 +32,7 @@ module rPi_Interface # (
     output tri  spi_miso,
     output reg  spi_read_stb,
     output reg  spi_write_stb,
+    output reg  spi_end_stb,
     output reg  [num_of_addr_bits-1:0]  spi_addr,
     output reg  [num_of_data_bits-1:0]  spi_write_data,
     input       [num_of_data_bits-1:0]  spi_read_data,
@@ -175,16 +176,19 @@ always @ (posedge clk) begin
     if (!reset_n) begin
         spi_write_stb <= 1'b0;
         spi_write_data <= 0;
+        spi_end_stb <= 1'b0;
     end
     else begin
 //        if (!spi_cs0 && spi_cs0_dly) begin      // end of spi segment
         if (spi_cs0_dly == 3'b100) begin      // end of spi segment
             spi_write_stb <= spi_write;       // write strobe if in write mode
             spi_write_data <= spi_shift_in_data[num_of_data_bits-1:0];
+            spi_end_stb <= 1'b1;
         end    
         else begin
            spi_write_stb <= 1'b0;
            spi_write_data <= spi_write_data;
+           spi_end_stb <= 1'b0;
         end
     end
 end

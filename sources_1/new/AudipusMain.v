@@ -136,11 +136,12 @@ parameter num_of_filters = 4;
     
     wire [7:0]  sram_control_reg, i2sToPcm_bit_reg; 
     wire [15:0] test_data_out, fnt_pnl_test;
+    wire [7:0]  rotary_encoder_reg; 
     
     wire [7:0]  fe_test_reg, vu_test_reg, triangle_inc_reg;
     
     wire        spi_rd_stb, spi_wr_stb;
-    
+    wire        rotary_encoder_rd_stb;
     wire        l_VU_pwm, r_VU_pwm;
     
     //test
@@ -205,7 +206,7 @@ parameter num_of_filters = 4;
         .spi_miso               (spi_miso),
 // control signals
         .rd_strobe              (spi_rd_stb),
-        .wr_strobe              (spi_wr_stb), 
+        .wr_strobe              (spi_wr_stb),
         .coef_wr_stb            (coef_wr_en),
         .eq_wr_stb              (eq_wr_en),
         .rotary_encoder_rd_stb  (rotary_encoder_rd_stb),
@@ -377,7 +378,9 @@ parameter num_of_filters = 4;
        
 // Front Panel Encoder Test
 
-    assign test[15:0] = fnt_pnl_test;
+    assign test[12:0] = fnt_pnl_test[13:0];
+    assign test[15:13] = {spi_clk, spi_miso, spi_mosi};
+    
 /*
 always @ (posedge clk) begin
            

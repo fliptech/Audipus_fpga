@@ -133,6 +133,7 @@ rPi_Interface rpi (
     .spi_miso       (spi_miso),     // output tri
     .spi_read_stb   (rd_strobe),
     .spi_write_stb  (wr_strobe),
+    .spi_end_stb    (spi_end_stb),
     .spi_addr       (spi_addr),
     .spi_write_data (spi_write_data),
     .spi_read_data  (spi_read_data),
@@ -208,7 +209,7 @@ always @ (posedge clk) begin
 
     eq_wr_stb <= (spi_addr == EQ_GAIN_LSB) && wr_strobe;    // SW IMPORTANT: EQ_GAIN_MSB most always be written before EQ_GAIN_LSB
 
-    rotary_encoder_rd_stb <= (spi_addr == ROTARY_ENCODER) && rd_strobe;
+    rotary_encoder_rd_stb <= (spi_addr == ROTARY_ENCODER) && spi_end_stb;
 end
 
 

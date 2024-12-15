@@ -35,6 +35,7 @@ module FrontPanel(
     output [15:0] test    
  );
  
+ reg [7:0]  rotary_enc_reg;
  wire       clkwise;
  wire [1:0] enc_value;
  wire       enc_sw_value;
@@ -48,7 +49,7 @@ assign test[4] = clkwise;       // rotation direction
 assign test[5] = enc_sw_value;
 assign test[6] =  enc_state_change_stb; 
 assign test[7] =  rotary_encoder_rd_stb;
-assign test[12:8] = rotary_encoder_reg[4:0];
+assign test[12:8] = rotary_enc_reg[4:0];
 
 
 // clockwise            enc_value(BA) = {00, 01, 11, 10}        
@@ -75,36 +76,38 @@ assign test[12:8] = rotary_encoder_reg[4:0];
 
  
 // rotary cpu interface
-//      rotary_encoder_reg[0] = click
-//      rotary_encoder_reg[1] = clkwise
-//      rotary_encoder_reg[2] = switch
-//      rotary_encoder_reg[3] = state change
-//      rotary_encoder_reg[4] = overflow
-//      rotary_encoder_reg[7:5] = 0
+//      rotary_enc_reg[0] = click
+//      rotary_enc_reg[1] = clkwise
+//      rotary_enc_reg[2] = switch
+//      rotary_enc_reg[3] = state change
+//      rotary_enc_reg[4] = overflow
+//      rotary_enc_reg[7:5] = 0
 
 always @ (posedge clk) begin
 
-    rotary_encoder_reg[7:5] <= 0;           // spare bits set to zero
+    rotary_enc_reg[7:5] <= 0;           // spare bits set to zero
 
     if (enc_state_change_stb)  begin        // enc state change occurs
-        rotary_encoder_reg[3] <= 1'b1;      // state change bit enabled
+        rotary_enc_reg[3] <= 1'b1;      // state change bit enabled
         
-        if (rotary_encoder_reg[3] == 1'b1)  // if state change when overflow bit is still set
-            rotary_encoder_reg[4] <= 1'b1;  // overflow bit enabled
+//        if (rotary_enc_reg[3] == 1'b1)    // if state change when reg state change bit is still set
+        if (rotary_enc_reg[0] && click)     // if click state change when click state change bit is still set
+            rotary_enc_reg[4] <= 1'b1;  // overflow bit set
         else
-            rotary_encoder_reg[4] <= 1'b0;  // overflow bit disabled 
+            rotary_enc_reg[4] <= 1'b0;  // overflow bit disabled 
                    
-        rotary_encoder_reg[0] <= click;
-        rotary_encoder_reg[1] <= clkwise;
-        rotary_encoder_reg[2] <= switch;
+        rotary_enc_reg[0] <= click;
+        rotary_enc_reg[1] <= clkwise;
+        rotary_enc_reg[2] <= switch;
     end
     else if (rotary_encoder_rd_stb)  begin  // clear state change & overflow bitafter being read by the cpu
-        rotary_encoder_reg[3] <= 1'b0;
-        rotary_encoder_reg[4] <= 1'b0;
-        rotary_encoder_reg[2:0] <= rotary_encoder_reg[2:0];
+        rotary_encoder_reg <= rotary_enc_reg;       // << transfer encoder data for reading
+        rotary_enc_reg[3] <= 1'b0;
+        rotary_enc_reg[4] <= 1'b0;
+        rotary_enc_reg[2:0] <= rotary_enc_reg[2:0];
     end
     else
-       rotary_encoder_reg[4:0] <= rotary_encoder_reg[4:0]; 
+       rotary_enc_reg[4:0] <= rotary_enc_reg[4:0]; 
 end
     
 endmodule
