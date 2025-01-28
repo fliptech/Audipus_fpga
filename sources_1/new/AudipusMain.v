@@ -124,13 +124,13 @@ parameter num_of_filters = 4;
     
     wire    reset_n = 1'b1; // temporary until external reset
 
-    // status register        
+    // status register  (not yet used)      
     wire [6:0] status_reg = 
         {1'b0, 1'b0, 1'b0, 1'b0, 1'b0, rPi20, rPi17};
     
     // interrupt register
     wire [7:0] interrupt_reg = 
-        {1'b0, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
+        {pwr_supply_int, 1'b0, 1'b0, 1'b0, dac_zero_l, dac_zero_r, 
          pcm9211_int1, pcm9211_int0}; 
  
     
@@ -169,6 +169,9 @@ parameter num_of_filters = 4;
     assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
     assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
     assign spi_cs_lcd_n = spi_cs0_n || !(rPix[23] && rPix[22]);
+    
+    // Power supply interrupt
+    wire pwr_supply_int = rPix[27];
 
     //audio control register
     
@@ -317,11 +320,11 @@ parameter num_of_filters = 4;
     wire encoder_sw, encoder_A, encoder_B;    
 
 // Front Panel aux spi assignments    
-    assign aux_spi_cs_lcd =     !spi_cs_lcd_n;  // aux[8], output
+    assign aux_spi_cs_lcd =     spi_cs_lcd_n;  // aux[8], output
     assign aux_spi_clk =        spi_clk;        // aux[4], output        
     assign aux_spi_mosi =       spi_mosi;       // aux[9], output
-    assign aux_spi_cmd_lcd =    rPix[27];       // aux[3], output, spi_cmd_lcd;
-    assign aux_reset_n =        reset_n;        // aux[7], output
+    assign aux_spi_cmd_lcd =    rPix[25];       // aux[3], output, spi_cmd_lcd
+    assign aux_reset_n =        rPix[26];       // aux[7], output, spi_rst_lcd
     // AudioProcessing aux VU assignments (for reference only, see AudioProcessing module) 
     assign aux_l_vu =           l_VU_pwm;       // aux[5], output, VU Meter pwm signal
     assign aux_r_vu =           r_VU_pwm;       // aux[0], output, VU Meter pwm signal
@@ -334,8 +337,7 @@ parameter num_of_filters = 4;
     FrontPanel fnt_pnl (
     // Common signals
         .clk                    (clk),
-        .spi_reset_n            (reset_n),          // change later for separate spi rst control
-    // Rotary Encoder    
+     // Rotary Encoder    
         .encoder_A              (encoder_A),           // input, aux[6]
         .encoder_B              (encoder_B),           // input, aux[2]
         .encoder_sw             (encoder_sw),          // input, aux[1]
@@ -378,9 +380,17 @@ parameter num_of_filters = 4;
        
 // Front Panel Encoder Test
 
-    assign test[12:0] = fnt_pnl_test[13:0];
-    assign test[15:13] = {spi_clk, spi_miso, spi_mosi};
-    
+//    assign test[12:0] = fnt_pnl_test[13:0];
+//    assign test[15:13] = {spi_clk, spi_miso, spi_mosi};
+
+// LCD Spi Test   
+    assign test[0] = aux_spi_cs_lcd;    // aux[8]        
+    assign test[1] = aux_spi_clk;       // aux[4]        
+    assign test[2] = aux_spi_mosi;      // aux[9]        
+    assign test[3] = aux_spi_cmd_lcd;   // aux[3]        
+    assign test[4] = aux_reset_n;       // aux[7]        
+    assign test[5] = rPix[26];          // spi rst
+    assign test[6] = rPix[25];          // spi cmd 
 /*
 always @ (posedge clk) begin
            

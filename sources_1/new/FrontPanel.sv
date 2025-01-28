@@ -23,7 +23,6 @@
 module FrontPanel(
 // Common signals
     input clk,
-    input spi_reset_n,
 // Rotary Encoder    
     input encoder_A,
     input encoder_B,
@@ -58,7 +57,6 @@ assign test[12:8] = rotary_enc_reg[4:0];
  rotaryEncoder rot_enc ( 
     // inputs  
     .clk                    (clk),
-    .reset                  (reset),
     .encoder_A              (encoder_A),
     .encoder_B              (encoder_B),
     .encoder_sw             (encoder_sw),

@@ -24,7 +24,6 @@ module rotaryEncoder # (
     parameter CLK_SCALER_VALUE = 16383      // 3KHz shift clk
 )(
     input clk,
-    input reset,
     input encoder_A,
     input encoder_B,
     input encoder_sw,
