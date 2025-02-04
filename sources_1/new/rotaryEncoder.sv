@@ -27,7 +27,7 @@ module rotaryEncoder # (
     input encoder_A,
     input encoder_B,
     input encoder_sw,
-    output reg          enc_state_change_stb,   // encoder state has changed
+    output reg          user_state_change_stb,   // encoder state has changed
     output reg          clockwise,              // rotation direction
     output              click,                  // state machine's state all 1's (a click)
     output              switch,                 // switched pressed
@@ -37,10 +37,15 @@ module rotaryEncoder # (
     output reg [1:0]    enc_value               // debounced encoder value => [B,A]
 );
 
-    reg [15:0]   clk_scaler;
+    reg [15:0]  clk_scaler;
     reg [3:0]   enc_reg_A, enc_reg_B, enc_reg_sw;
+//    reg         enc_state_change_stb;
+    reg         switch_dly, click_dly;
     
      
+//cpu bits assignments
+    assign click = (encoder_state == one);  
+    assign switch = enc_sw_value; 
     assign clkwise = clockwise;
     assign test_cnt = clk_scaler[1:0];
 
@@ -91,21 +96,16 @@ typedef enum reg [1:0] {zero, between_01, one, between_10} EncoderState;
 EncoderState    encoder_state;
 reg[1:0]        enc_value_dly;
 reg             state_change_stb;
-reg             enc_sw_value_dly;
 
-//cpu bits assignments
-assign click = (encoder_state == one);  
-assign switch = enc_sw_value; 
 
 // Encoder State Machine      
 always @ (posedge clk) begin
 
     enc_value_dly <= enc_value;
-    enc_sw_value_dly <= enc_sw_value;
     
     if (enc_value_dly != enc_value) begin
                 
-        enc_state_change_stb <= 1'b1;         // strobe when a change in encoder states   
+//        enc_state_change_stb <= 1'b1;         // strobe when a change in encoder states   
 
         case (encoder_state) 
             zero: begin
@@ -155,19 +155,25 @@ always @ (posedge clk) begin
         endcase;
     end // if
     
-    else if (enc_sw_value_dly != enc_sw_value) begin
-        enc_state_change_stb <= 1'b1;
-        clockwise <= clockwise;
-        encoder_state <= encoder_state;
-    end // else if
-    
     else begin
-        enc_state_change_stb <= 1'b0;       // clear strobe
+//        enc_state_change_stb <= 1'b0;       // clear strobe
         clockwise <= clockwise;
         encoder_state <= encoder_state;
     end  // else                  
 
 end   // end always            
+
+// User State Change     
+always @ (posedge clk) begin
+    switch_dly <= switch;
+    click_dly <= click;
+    // strobe if low to high on click or low to high on switch    
+    if ((!click_dly && click) || (switch_dly && !switch))
+        user_state_change_stb <= 1'b1;    
+   else     
+        user_state_change_stb <= 1'b0;
+end
+   
 
                       
 endmodule

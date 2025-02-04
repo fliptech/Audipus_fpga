@@ -380,10 +380,10 @@ parameter num_of_filters = 4;
        
 // Front Panel Encoder Test
 
-//    assign test[12:0] = fnt_pnl_test[13:0];
+    assign test[13:0] = fnt_pnl_test[13:0];
 //    assign test[15:13] = {spi_clk, spi_miso, spi_mosi};
 
-// LCD Spi Test   
+/* LCD Spi Test   
     assign test[0] = aux_spi_cs_lcd;    // aux[8]        
     assign test[1] = aux_spi_clk;       // aux[4]        
     assign test[2] = aux_spi_mosi;      // aux[9]        
@@ -391,7 +391,7 @@ parameter num_of_filters = 4;
     assign test[4] = aux_reset_n;       // aux[7]        
     assign test[5] = rPix[26];          // spi rst
     assign test[6] = rPix[25];          // spi cmd 
-/*
+//*
 always @ (posedge clk) begin
            
     test [15:0] <= test_data_out;
