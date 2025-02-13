@@ -58,10 +58,10 @@ parameter num_of_equalizers = 8;
         inout  [3:0] sram_spi_sio,
         
         input   rPi4,
-        input   rPi16,
-        input   rPi17,
-        input   rPi20,
-        input   [27:22] rPix,
+        input   rPi16,          // not used
+        input   rPi17,          // status reg
+        input   rPi20,          // status reg
+        input   [27:22] rPix,   // {ps_int, lcd_rst, lcd_cmd, not_used, spi_cs_sel1, spi_cs_sel0}
         
 // Front Panel aux spi assignments    
         output aux_spi_cs_lcd,      // aux[8]
@@ -166,8 +166,8 @@ parameter num_of_filters = 4;
 //  spi devices cs mux
 //  rPix[23:22] select the spi_cs_n for each device
     assign spi_cs_fpga_n = spi_cs0_n || !(!rPix[23] && !rPix[22]);
-    assign spi_cs_pcm1792_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
-    assign spi_cs_pcm9211_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
+    assign spi_cs_pcm9211_n = spi_cs0_n || !(!rPix[23] && rPix[22]);
+    assign spi_cs_pcm1792_n = spi_cs0_n || !(rPix[23] && !rPix[22]);
     assign spi_cs_lcd_n = spi_cs0_n || !(rPix[23] && rPix[22]);
     
     // Power supply interrupt
@@ -370,6 +370,16 @@ parameter num_of_filters = 4;
     assign test[15:9] = spi_addr;
 //    assign test[15:13] = ;
 */ 
+//  DAC SPI Test
+    assign test[3:0] = {spi_miso, spi_mosi, spi_clk, spi_cs0_n};
+    assign test[4] = rPix[22];
+    assign test[5] = rPix[23];
+    assign test[6] = spi_cs_fpga_n;         // 00   [23,22]
+    assign test[7] = spi_cs_pcm9211_n;      // 01 
+    assign test[8] =  spi_cs_pcm1792_n;     // 10
+    assign test[9] = spi_cs_lcd_n;          // 11
+//    assign test[15:13] = ;
+ 
 // I2S Test
 //    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
   
@@ -380,7 +390,7 @@ parameter num_of_filters = 4;
        
 // Front Panel Encoder Test
 
-    assign test[13:0] = fnt_pnl_test[13:0];
+//    assign test[13:0] = fnt_pnl_test[13:0];
 //    assign test[15:13] = {spi_clk, spi_miso, spi_mosi};
 
 /* LCD Spi Test   
