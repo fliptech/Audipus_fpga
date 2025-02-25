@@ -113,12 +113,14 @@ wire sin_test_en = (audio_mux_sel == 2'b10);
 
 wire [10:0] smp_clken_count;
 
-wire [15:0] fir_test_data, eq_test_data;
+// test stuff
+wire [15:0] fir_test_data, eq_test_data, vuTest_data;
 wire        fir_test_en, eq_test_en;
 
 // audio_status register
 assign audio_status[0]  = fir_pntr_zero;
 //assign audio_status[1]  = eq_wr_addr_zero;
+
 
 
 /* 
@@ -325,17 +327,23 @@ VU_MeterDriver VU_mtr (
     .r_audio_signal         (r_mux_out[23:16]),     // in[7:0]
     .vu_test_reg            (vu_test_reg),          // in[7:0]
     .l_VU_out               (l_VU_pwm),             // out
-    .r_VU_out               (r_VU_pwm)              // out
+    .r_VU_out               (r_VU_pwm),             // out
+    .test_dout_valid        (vuTest_d_valid),       // out
+    .test                   (vuTest_data)           // out [15:0]
 );
  
 
 //  TEST
 
+assign test_data_out =      vuTest_data;   
+assign test_dout_valid =    vuTest_d_valid;
+
+
 //assign test_data_out = r_eq_out;
 //assign test_dout_valid = r_eq_valid; 
 
 // test from mux 
-assign test_data_out =      r_mux_out[23:8];   
+//assign test_data_out =      r_mux_out[23:8];   
 //                        (test_d_select == 0) ? interp_test_d :          // test_d_select = audio_control[2:1]
 //                        (test_d_select == 0) ? {l_intrp_d_out[23:11], dac_data, dac_lrclk, l_intrp_dout_valid} :
 //                        (test_d_select == 0) ? r_intrp_d_out[23:8] :
@@ -357,7 +365,7 @@ assign test_data_out =      r_mux_out[23:8];
 //;
 
 
-assign test_dout_valid =    r_mux_valid;
+//assign test_dout_valid =    r_mux_valid;
 //                            (test_d_select == 0) ? l_intrp_dout_valid :
 //                            (test_d_select == 3) ? fir_test_en :
 //                            (test_d_select == 2) ? r_fir_data_valid & fir_pntr_zero :

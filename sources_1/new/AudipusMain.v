@@ -360,6 +360,10 @@ parameter num_of_filters = 4;
 
 // Test Assignments
 
+// VU Driver Test
+    assign test[15:0] = test_data_out;
+    assign test[16] = test_dout_valid;
+
 /*  SPI Test
     assign test[3:0] = {spi_clk, spi_cs_fpga_n, spi_miso, spi_mosi};
     assign test[4] = spi_rd_stb;
@@ -370,7 +374,7 @@ parameter num_of_filters = 4;
     assign test[15:9] = spi_addr;
 //    assign test[15:13] = ;
 */ 
-//  DAC SPI Test
+/*  DAC SPI Test
     assign test[3:0] = {spi_miso, spi_mosi, spi_clk, spi_cs0_n};
     assign test[4] = rPix[22];
     assign test[5] = rPix[23];
@@ -378,8 +382,8 @@ parameter num_of_filters = 4;
     assign test[7] = spi_cs_pcm9211_n;      // 01 
     assign test[8] =  spi_cs_pcm1792_n;     // 10
     assign test[9] = spi_cs_lcd_n;          // 11
-//    assign test[15:13] = ;
- 
+    assign test[15:13] = ;
+*/ 
 // I2S Test
 //    assign test[2:0] = {dac_data, dac_lrclk, dac_bclk};
   
