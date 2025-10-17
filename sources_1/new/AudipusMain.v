@@ -125,8 +125,8 @@ parameter num_of_filters = 4;
     wire    reset_n = 1'b1; // temporary until external reset
 
     // status register  (not yet used)      
-    wire [6:0] status_reg = 
-        {1'b0, 1'b0, 1'b0, 1'b0, 1'b0, rPi20, rPi17};
+    wire [7:0] status_reg = 
+        {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, rPi20, rPi17};     // status[7:2] is a constant for config check
     
     // interrupt register
     wire [7:0] interrupt_reg = 

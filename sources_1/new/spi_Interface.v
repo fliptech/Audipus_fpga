@@ -89,7 +89,7 @@ reg [6:0] interrupt_reg = 0;
 
 // STATUS REG
 reg interrupt, rd_strobe_dly; 
-wire [6:0] status_reg = 0;  
+// wire [6:0] status_reg = 0;  
 //assign status = {interrupt, status_reg}; 
 
 //	GENERAL REGISTERS	
@@ -187,7 +187,7 @@ always @ (posedge clk) begin
             (spi_addr == MPIO_TO_SPI)    ?   mpio_to_spi_data :
 //            (spi_addr == AUX)            ?   aux_reg :
             (spi_addr == TEST)           ?   test_reg :
-            (spi_addr == STATUS)         ?   status_reg :
+            (spi_addr == STATUS)         ?   status :
             (spi_addr == INTERRUPT)      ?   interrupt_reg :
             (spi_addr == I2SPCM_BIT_CNT) ?   i2sToPcm_bit_reg :
             (spi_addr == FE_TEST)        ?   fe_test_reg :
